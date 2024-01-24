@@ -334,8 +334,17 @@ func (t *transferQueueProcessor) UnlockTaskProcessing() {
 }
 
 func (t *transferQueueProcessor) drain() {
-	// before shutdown, make sure the ack level is up to date
-	if err := t.completeTransfer(); err != nil {
+	if !t.shard.GetConfig().QueueProcessorEnableGracefulSyncShutdown() {
+		// before shutdown, make sure the ack level is up to date
+		if err := t.completeTransfer(context.Background()); err != nil {
+			t.logger.Error("Failed to complete transfer task during shutdown", tag.Error(err))
+		}
+	}
+
+	// when graceful shutdown is enabled for queue processor, use a context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), gracefulShutdownTimeout)
+	defer cancel()
+	if err := t.completeTransfer(ctx); err != nil {
 		t.logger.Error("Failed to complete transfer task during shutdown", tag.Error(err))
 	}
 }
@@ -384,9 +393,9 @@ func (t *transferQueueProcessor) completeTransferLoop() {
 	}
 }
 
-func (t *transferQueueProcessor) completeTransfer() error {
+func (t *transferQueueProcessor) completeTransfer(ctx context.Context) error {
 	newAckLevel := maximumTransferTaskKey
-	actionResult, err := t.HandleAction(context.Background(), t.currentClusterName, NewGetStateAction())
+	actionResult, err := t.HandleAction(ctx, t.currentClusterName, NewGetStateAction())
 	if err != nil {
 		return err
 	}
@@ -395,7 +404,7 @@ func (t *transferQueueProcessor) completeTransfer() error {
 	}
 
 	for standbyClusterName := range t.standbyQueueProcessors {
-		actionResult, err := t.HandleAction(context.Background(), standbyClusterName, NewGetStateAction())
+		actionResult, err := t.HandleAction(ctx, standbyClusterName, NewGetStateAction())
 		if err != nil {
 			return err
 		}
@@ -427,9 +436,10 @@ func (t *transferQueueProcessor) completeTransfer() error {
 		Tagged(metrics.ShardIDTag(t.shard.GetShardID())).
 		IncCounter(metrics.TaskBatchCompleteCounter)
 
+	totalDeleted := 0
 	for {
 		pageSize := t.config.TransferTaskDeleteBatchSize()
-		resp, err := t.shard.GetExecutionManager().RangeCompleteTransferTask(context.Background(), &persistence.RangeCompleteTransferTaskRequest{
+		resp, err := t.shard.GetExecutionManager().RangeCompleteTransferTask(ctx, &persistence.RangeCompleteTransferTaskRequest{
 			ExclusiveBeginTaskID: t.ackLevel,
 			InclusiveEndTaskID:   newAckLevelTaskID,
 			PageSize:             pageSize, // pageSize may or may not be honored
@@ -437,6 +447,9 @@ func (t *transferQueueProcessor) completeTransfer() error {
 		if err != nil {
 			return err
 		}
+
+		totalDeleted += resp.TasksCompleted
+		t.logger.Debug("Transfer task batch deletion", tag.Dynamic("page-size", pageSize), tag.Dynamic("total-deleted", totalDeleted))
 		if !persistence.HasMoreRowsToDelete(resp.TasksCompleted, pageSize) {
 			break
 		}

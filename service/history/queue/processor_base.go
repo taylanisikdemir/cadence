@@ -296,6 +296,7 @@ func (p *processorBase) emitProcessingQueueMetrics() {
 	p.metricsScope.RecordTimer(metrics.ProcessingQueueMaxLevelTimer, time.Duration(maxProcessingQueueLevel))
 }
 
+TODO: change this function to return result instead of a channel
 func (p *processorBase) addAction(ctx context.Context, action *Action) (chan actionResultNotification, bool) {
 	resultNotificationCh := make(chan actionResultNotification, 1)
 	if ctx == nil {
