@@ -1,40 +1,118 @@
-# This is a basic workflow to help you get started with Actions
+name: Publish Docker image (testing)
 
-name: Publish Docker image
+# TODO: first try it with a static tag on master merge, then switch to actual release tags to be triggered on release
+on: [pull_request]
 
-# Controls when the action will run. Triggers the workflow on push or pull request
-# events but only for the master branch
-on:
-  release:
-    types: [ released ]
+# on:
+#   push:
+#     branches:
+#       - main
+#   release:
+#     types:
+#       - released
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+
 jobs:
-  push_server_to_registry:
-    name: Push Docker server image to Docker Hub
+  # this job determines the image tag based on the event that triggered the workflow.
+  # it sets the image_tag output variable to either "master" or the release version
+  image-tag-provider:
+    runs-on: ubuntu-latest
+    outputs: # this exposes image_tag to other dependent jobs
+      image_tag: ${{ steps.set-vars.outputs.image_tag }}
+    steps:
+      - name: Determine image tag
+        id: set-vars
+        run: |
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            echo "image_tag='master'" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event_name }}" == "release" ]]; then
+            echo "image_tag='${{ github.event.release.tag_name }}'" >> $GITHUB_OUTPUT
+          fi
+
+  validate-env-vars:
+    needs: image-tag-provider
     runs-on: ubuntu-latest
     steps:
-      - name: Check out the repo
-        uses: actions/checkout@v2
-      - name: Push to Docker Hub (server build)
-        uses: docker/build-push-action@v2
-        with:
-          username: ${{ secrets.CADENCE_SERVER_DOCKERHUB_USERNAME }}
-          password: ${{ secrets.CADENCE_SERVER_DOCKERHUB_TOKEN }}
-          repository: ubercadence/server
-          build_args: TARGET=server
-          tag_with_ref: true
-  push_server_auto_setup_to_registry:
-    name: Push Docker server auto-setup images to Docker Hub
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out the repo
-        uses: actions/checkout@v2
-      - name: Push to Docker Hub (auto-setup build)
-        uses: docker/build-push-action@v2
-        with:
-          username: ${{ secrets.CADENCE_SERVER_DOCKERHUB_USERNAME }}
-          password: ${{ secrets.CADENCE_SERVER_DOCKERHUB_TOKEN }}
-          repository: ubercadence/server
-          build_args: TARGET=auto-setup
-          tags: ${{ github.event.release.tag_name }}-auto-setup, latestrelease-auto-setup
+      - name: Check image_tag
+        run: echo "Image tag is ${{ needs.set-env-vars.outputs.image_tag }}"
+
+  # push_server_to_registry:
+  #   name: Push server image to Docker Hub
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #     - name: Login to Docker Hub
+  #       uses: docker/login-action@v3
+  #       with:
+  #         username: enderd592
+  #         password: ${{ secrets.CADENCE_SERVER_DOCKERHUB_TOKEN }}
+  #     - name: Set up QEMU
+  #       uses: docker/setup-qemu-action@v3
+  #     - name: Set up Docker Buildx
+  #       uses: docker/setup-buildx-action@v3
+  #     - name: Build and push
+  #       uses: docker/build-push-action@v6
+  #       with:
+  #         context: .
+  #         platforms: linux/amd64, linux/arm64
+  #         build-args: TARGET=server
+  #         # TODO: first try it with a static tag on master merge, then switch to actual release tags to be triggered on release
+  #         # push: true
+  #         # tags: ubercadence/server:${{ github.event.release.tag_name }}
+  #         push: false
+  #         tags: ubercadence/devserver:testserver
+
+  # push_server_auto_setup_to_registry:
+  #   name: Push auto-setup images to Docker Hub
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #     - name: Login to Docker Hub
+  #       uses: docker/login-action@v3
+  #       with:
+  #         username: enderd592
+  #         password: ${{ secrets.CADENCE_SERVER_DOCKERHUB_TOKEN }}
+  #     - name: Set up QEMU
+  #       uses: docker/setup-qemu-action@v3
+  #     - name: Set up Docker Buildx
+  #       uses: docker/setup-buildx-action@v3
+  #     - name: Build and push
+  #       uses: docker/build-push-action@v6
+  #       with:
+  #         context: .
+  #         platforms: linux/amd64, linux/arm64
+  #         build-args: TARGET=auto-setup
+  #         # TODO: first try it with a static tag on master merge, then switch to actual release tags to be triggered on release
+  #         # push: true
+  #         # tags: ubercadence/server:${{ github.event.release.tag_name }}-auto-setup, latestrelease-auto-setup
+  #         push: false
+  #         tags: ubercadence/devserver:testserver-auto-setup
+
+  # push_cli_to_registry:
+  #   name: Push auto-setup images to Docker Hub
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v4
+  #     - name: Login to Docker Hub
+  #       uses: docker/login-action@v3
+  #       with:
+  #         username: enderd592
+  #         password: ${{ secrets.CADENCE_SERVER_DOCKERHUB_TOKEN }}
+  #     - name: Set up QEMU
+  #       uses: docker/setup-qemu-action@v3
+  #     - name: Set up Docker Buildx
+  #       uses: docker/setup-buildx-action@v3
+  #     - name: Build and push
+  #       uses: docker/build-push-action@v6
+  #       with:
+  #         context: .
+  #         platforms: linux/amd64, linux/arm64
+  #         build-args: TARGET=cli
+  #         # TODO: first try it with a static tag on master merge, then switch to actual release tags to be triggered on release
+  #         # push: true
+  #         # tags: ubercadence/cli:${{ github.event.release.tag_name }}-auto-setup, latestrelease-auto-setup
+  #         push: false
+  #         tags: ubercadence/devserver:testcli
