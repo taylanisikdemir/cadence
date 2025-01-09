@@ -82,7 +82,7 @@ jobs:
         if: ${{ needs.meta.outputs.push_enabled == 'true' }}
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.CADENCE_SERVER_DOCKERHUB_USERNAME }}
+          username: ${{ vars.CADENCE_SERVER_DOCKERHUB_USERNAME }}
           password: ${{ secrets.CADENCE_SERVER_DOCKERHUB_TOKEN }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
