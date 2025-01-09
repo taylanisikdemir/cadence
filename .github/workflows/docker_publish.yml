@@ -85,7 +85,7 @@ jobs:
 >>>>>>> 5a55c4b5c (fix format)
         uses: docker/login-action@v3
         with:
-          username: ${{ vars.CADENCE_SERVER_DOCKERHUB_USERNAME }}
+          username: ${{ secrets.CADENCE_SERVER_DOCKERHUB_USERNAME }}
           password: ${{ secrets.CADENCE_SERVER_DOCKERHUB_TOKEN }}
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
