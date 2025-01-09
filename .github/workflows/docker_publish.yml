@@ -11,9 +11,11 @@ on:
 
 
 jobs:
+  # This job exposes image_tag and push_enabled variables for other jobs.
+  # Other jobs depends on this. see needs: meta in other jobs.
   meta:
     runs-on: ubuntu-latest
-    outputs: # this exposes 'image_tag' variable to other jobs
+    outputs:
       image_tag: ${{ steps.determine-image-tag.outputs.image_tag }}
       push_enabled: ${{ steps.determine-push.outputs.enabled }}
     steps:
@@ -40,6 +42,7 @@ jobs:
             echo "enabled=true" >> $GITHUB_OUTPUT
           fi
 
+  # TODO: Delete below job below once image tags are validated after merging
   check-meta:
     needs: meta
     runs-on: ubuntu-latest
@@ -80,7 +83,7 @@ jobs:
           context: .
           platforms: linux/amd64
           build-args: TARGET=server
-          # TODO: first try it with a static tag on master merge, then switch to actual release tags to be triggered on release
+          # TODO: Uncomment below once image tags are validated after merging
           # push: ${{ needs.meta.outputs.push_enabled == 'true' }}
           push: false
           tags: ubercadence/server:${{ needs.meta.outputs.image_tag }}
@@ -111,7 +114,7 @@ jobs:
           context: .
           platforms: linux/amd64
           build-args: TARGET=auto-setup
-          # TODO: first try it with a static tag on master merge, then switch to actual release tags to be triggered on release
+          # TODO: Uncomment below once image tags are validated after merging
           # push: ${{ needs.meta.outputs.push_enabled == 'true' }}
           push: false
           tags: ubercadence/server:${{ needs.meta.outputs.image_tag }}-auto-setup
@@ -143,7 +146,7 @@ jobs:
           context: .
           platforms: linux/amd64
           build-args: TARGET=cli
-          # TODO: first try it with a static tag on master merge, then switch to actual release tags to be triggered on release
+          # TODO: Uncomment below once image tags are validated after merging
           # push: ${{ needs.meta.outputs.push_enabled == 'true' }}
           push: false
           tags: ubercadence/cli:${{ needs.meta.outputs.image_tag }}
