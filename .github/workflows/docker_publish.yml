@@ -40,8 +40,7 @@ jobs:
             echo "enabled='true'" >> $GITHUB_OUTPUT
           fi
 
-  # TODO: remove this job after validating
-  validate-metadata:
+  check-meta:
     needs: meta
     runs-on: ubuntu-latest
     steps:
@@ -58,144 +57,150 @@ jobs:
         run: |
           echo "Push enabled: ${{ needs.meta.outputs.image_tag }}"
 
-  # push_server_image:
-  #   name: Push server image to Docker Hub
-  #   needs: meta
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-  #     - name: Login to Docker Hub
-  #       if: ${{ needs.meta.outputs.push_enabled == 'true' }}
-  #       uses: docker/login-action@v3
-  #       with:
-  #         username: ${{ secrets. CADENCE_SERVER_DOCKERHUB_USERNAME }}
-  #         password: ${{ secrets.CADENCE_SERVER_DOCKERHUB_TOKEN }}
-  #     - name: Set up QEMU
-  #       uses: docker/setup-qemu-action@v3
-  #     - name: Set up Docker Buildx
-  #       uses: docker/setup-buildx-action@v3
-  #     - name: Build and push
-  #       uses: docker/build-push-action@v6
-  #       with:
-  #         context: .
-  #         platforms: linux/amd64, linux/arm64
-  #         build-args: TARGET=server
-  #         # TODO: first try it with a static tag on master merge, then switch to actual release tags to be triggered on release
-  #         # push: ${{ needs.meta.outputs.push_enabled == 'true' }}
-  #         push: false
-  #         # TODO: switch from devserver to server
-  #         tags: ubercadence/devserver:${{ needs.meta.outputs.image_tag }}
+  push_server_image:
+    name: Push server image to Docker Hub
+    needs: meta
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Login to Docker Hub
+        if: ${{ needs.meta.outputs.push_enabled == 'true' }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.CADENCE_SERVER_DOCKERHUB_USERNAME }}
+          password: ${{ secrets.CADENCE_SERVER_DOCKERHUB_TOKEN }}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          build-args: TARGET=server
+          # TODO: first try it with a static tag on master merge, then switch to actual release tags to be triggered on release
+          # push: ${{ needs.meta.outputs.push_enabled == 'true' }}
+          push: false
+          tags: ubercadence/server:${{ needs.meta.outputs.image_tag }}
+      - name: Validate tag
+        run: |
+          echo "ubercadence/server:${{ needs.meta.outputs.image_tag }}"
 
-  # push_server_auto_setup_image:
-  #   name: Push auto-setup image to Docker Hub
-  #   needs: meta
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-  #     - name: Login to Docker Hub
-  #       if: ${{ needs.meta.outputs.push_enabled == 'true' }}
-  #       uses: docker/login-action@v3
-  #       with:
-  #         username: ${{ secrets. CADENCE_SERVER_DOCKERHUB_USERNAME }}
-  #         password: ${{ secrets.CADENCE_SERVER_DOCKERHUB_TOKEN }}
-  #     - name: Set up QEMU
-  #       uses: docker/setup-qemu-action@v3
-  #     - name: Set up Docker Buildx
-  #       uses: docker/setup-buildx-action@v3
-  #     - name: Build and push
-  #       uses: docker/build-push-action@v6
-  #       with:
-  #         context: .
-  #         platforms: linux/amd64, linux/arm64
-  #         build-args: TARGET=auto-setup
-  #         # TODO: first try it with a static tag on master merge, then switch to actual release tags to be triggered on release
-  #         # push: ${{ needs.meta.outputs.push_enabled == 'true' }}
-  #         push: false
-  #         # TODO: switch from devserver to server
-  #         tags: ubercadence/devserver:${{ needs.meta.outputs.image_tag }}-auto-setup
+  push_server_auto_setup_image:
+    name: Push auto-setup image to Docker Hub
+    needs: meta
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Login to Docker Hub
+        if: ${{ needs.meta.outputs.push_enabled == 'true' }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.CADENCE_SERVER_DOCKERHUB_USERNAME }}
+          password: ${{ secrets.CADENCE_SERVER_DOCKERHUB_TOKEN }}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          build-args: TARGET=auto-setup
+          # TODO: first try it with a static tag on master merge, then switch to actual release tags to be triggered on release
+          # push: ${{ needs.meta.outputs.push_enabled == 'true' }}
+          push: false
+          tags: ubercadence/server:${{ needs.meta.outputs.image_tag }}-auto-setup
+      - name: Validate tag
+        run: |
+          echo "ubercadence/server:${{ needs.meta.outputs.image_tag }}-auto-setup"
 
 
-  # push_cli_image:
-  #   name: Push CLI image to Docker Hub
-  #   needs: meta
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-  #     - name: Login to Docker Hub
-  #       uses: docker/login-action@v3
-  #       if: ${{ needs.meta.outputs.push_enabled == 'true' }}
-  #       with:
-  #         username: ${{ secrets. CADENCE_SERVER_DOCKERHUB_USERNAME }}
-  #         password: ${{ secrets.CADENCE_SERVER_DOCKERHUB_TOKEN }}
-  #     - name: Set up QEMU
-  #       uses: docker/setup-qemu-action@v3
-  #     - name: Set up Docker Buildx
-  #       uses: docker/setup-buildx-action@v3
-  #     - name: Build and push
-  #       uses: docker/build-push-action@v6
-  #       with:
-  #         context: .
-  #         platforms: linux/amd64, linux/arm64
-  #         build-args: TARGET=cli
-  #         # TODO: first try it with a static tag on master merge, then switch to actual release tags to be triggered on release
-  #         # push: ${{ needs.meta.outputs.push_enabled == 'true' }}
-  #         push: false
-  #         # TODO: Replace from "devserver:cli-" with "server:""
-  #         tags: ubercadence/devserver:cli-${{ needs.meta.outputs.image_tag }}-auto-setup
+  push_cli_image:
+    name: Push CLI image to Docker Hub
+    needs: meta
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        if: ${{ needs.meta.outputs.push_enabled == 'true' }}
+        with:
+          username: ${{ secrets.CADENCE_SERVER_DOCKERHUB_USERNAME }}
+          password: ${{ secrets.CADENCE_SERVER_DOCKERHUB_TOKEN }}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          build-args: TARGET=cli
+          # TODO: first try it with a static tag on master merge, then switch to actual release tags to be triggered on release
+          # push: ${{ needs.meta.outputs.push_enabled == 'true' }}
+          push: false
+          tags: ubercadence/cli:${{ needs.meta.outputs.image_tag }}
+      - name: Validate tag
+        run: |
+          echo "ubercadence/cli:${{ needs.meta.outputs.image_tag }}"
 
-  # push_bench_image:
-  #   name: Push bench image to Docker Hub on master pushes
-  #   needs: meta
-  #   runs-on: ubuntu-latest
-  #   if: ${{ needs.meta.outputs.image_tag == 'master' }}
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-  #     - name: Login to Docker Hub
-  #       uses: docker/login-action@v3
-  #       if: ${{ needs.meta.outputs.push_enabled == 'true' }}
-  #       with:
-  #         username: ${{ secrets. CADENCE_SERVER_DOCKERHUB_USERNAME }}
-  #         password: ${{ secrets.CADENCE_SERVER_DOCKERHUB_TOKEN }}
-  #     - name: Set up QEMU
-  #       uses: docker/setup-qemu-action@v3
-  #     - name: Set up Docker Buildx
-  #       uses: docker/setup-buildx-action@v3
-  #     - name: Build and push
-  #       uses: docker/build-push-action@v6
-  #       with:
-  #         context: .
-  #         platforms: linux/amd64, linux/arm64
-  #         build-args: TARGET=bench
-  #         tags: ubercadence/bench:master
-  #         push: ${{ needs.meta.outputs.push_enabled == 'true' }}
+  push_bench_image:
+    name: Push bench image to Docker Hub on master pushes
+    needs: meta
+    runs-on: ubuntu-latest
+    if: ${{ needs.meta.outputs.image_tag == 'master' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        if: ${{ needs.meta.outputs.push_enabled == 'true' }}
+        with:
+          username: ${{ secrets.CADENCE_SERVER_DOCKERHUB_USERNAME }}
+          password: ${{ secrets.CADENCE_SERVER_DOCKERHUB_TOKEN }}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          build-args: TARGET=bench
+          tags: ubercadence/bench:master
+          push: ${{ needs.meta.outputs.push_enabled == 'true' }}
 
-  # push_canary_image:
-  #   name: Push canary image to Docker Hub on master pushes
-  #   needs: meta
-  #   runs-on: ubuntu-latest
-  #   if: ${{ needs.meta.outputs.image_tag == 'master' }}
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v4
-  #     - name: Login to Docker Hub
-  #       uses: docker/login-action@v3
-  #       if: ${{ needs.meta.outputs.push_enabled == 'true' }}
-  #       with:
-  #         username: ${{ secrets. CADENCE_SERVER_DOCKERHUB_USERNAME }}
-  #         password: ${{ secrets.CADENCE_SERVER_DOCKERHUB_TOKEN }}
-  #     - name: Set up QEMU
-  #       uses: docker/setup-qemu-action@v3
-  #     - name: Set up Docker Buildx
-  #       uses: docker/setup-buildx-action@v3
-  #     - name: Build and push
-  #       uses: docker/build-push-action@v6
-  #       with:
-  #         context: .
-  #         platforms: linux/amd64, linux/arm64
-  #         build-args: TARGET=canary
-  #         tags: ubercadence/canary:master
-  #         push: ${{ needs.meta.outputs.push_enabled == 'true' }}
+  push_canary_image:
+    name: Push canary image to Docker Hub on master pushes
+    needs: meta
+    runs-on: ubuntu-latest
+    if: ${{ needs.meta.outputs.image_tag == 'master' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        if: ${{ needs.meta.outputs.push_enabled == 'true' }}
+        with:
+          username: ${{ secrets.CADENCE_SERVER_DOCKERHUB_USERNAME }}
+          password: ${{ secrets.CADENCE_SERVER_DOCKERHUB_TOKEN }}
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          build-args: TARGET=canary
+          tags: ubercadence/canary:master
+          push: ${{ needs.meta.outputs.push_enabled == 'true' }}
