@@ -28,5 +28,5 @@ jobs:
           files: .build/coverage/unit_cover.out
           exclude: ./
           # token: ${{ secrets.CODECOV_TOKEN }}
-          token: not-actual-token
+          # token: not-actual-token
           slug: cadence-workflow/cadence
