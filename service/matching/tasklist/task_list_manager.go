@@ -37,6 +37,7 @@ import (
 	"github.com/uber/cadence/client/history"
 	"github.com/uber/cadence/client/matching"
 	"github.com/uber/cadence/common"
+	"github.com/uber/cadence/common/activecluster"
 	"github.com/uber/cadence/common/backoff"
 	"github.com/uber/cadence/common/cache"
 	"github.com/uber/cadence/common/clock"
@@ -125,6 +126,7 @@ type (
 		partitionConfig     *types.TaskListPartitionConfig
 		historyService      history.Client
 		taskCompleter       TaskCompleter
+		activeClusterMgr    activecluster.Manager
 	}
 )
 
@@ -150,6 +152,7 @@ func NewManager(
 	timeSource clock.TimeSource,
 	createTime time.Time,
 	historyService history.Client,
+	activeClusterMgr activecluster.Manager,
 ) (Manager, error) {
 	domainName, err := domainCache.GetDomainName(taskList.GetDomainID())
 	if err != nil {
@@ -189,7 +192,8 @@ func NewManager(
 			backoff.WithRetryPolicy(persistenceOperationRetryPolicy),
 			backoff.WithRetryableError(persistence.IsTransientError),
 		),
-		historyService: historyService,
+		historyService:   historyService,
+		activeClusterMgr: activeClusterMgr,
 	}
 
 	tlMgr.pollers = poller.NewPollerManager(func() {
@@ -589,7 +593,7 @@ func (c *taskListManagerImpl) DispatchTask(ctx context.Context, task *InternalTa
 	}
 
 	// optional configuration to enable cleanup of tasks, in the standby cluster, that have already been started
-	if c.config.EnableStandbyTaskCompletion() {
+	if c.config.EnableStandbyTaskCompletion() && !domainEntry.GetReplicationConfig().IsActiveActive() {
 		if err := c.taskCompleter.CompleteTaskIfStarted(ctx, task); err != nil {
 			if errors.Is(err, errDomainIsActive) {
 				return c.matcher.MustOffer(ctx, task)
