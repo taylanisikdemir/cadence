@@ -11,12 +11,12 @@ mkdir -p .bin && go build -o .bin/cadence_mcp tools/mcp/main.go
 ```
 
 
-2. Update .cursor/mcp.json with following entry:
+2. Update .cursor/mcp.json with following entry. Use the full path to the executable:
 ```
 {
 "mcpServers": {
   "cadence-mcp-server": {
-      "command": ".bin/cadence_mcp",
+      "command": "/path/to/repo/.bin/cadence_mcp",
       "args": [],
       "env": {}
     }
@@ -24,15 +24,23 @@ mkdir -p .bin && go build -o .bin/cadence_mcp tools/mcp/main.go
 }
 ```
 
+3. Enable Agent mode in Cursor.
+
+4. Enable yolo mode if you want tools to be run without confirmation.
+
+5. Restart Cursor
+
 ## Usage
 
-1. Is my domain resilient to regional outages?
-TODO: Explain what regional resiliency is and insert doc links.
+Ask a relevant question. For example:
+
+  Is my Cadence domain "cadence-system" resilient to regional outages?
 
 For now, it will tell you "Yes" if the domain is global, and "No" otherwise.
-```
-% cadence --env prod11 --proxy_region dca --domain cadence-system domain describe
-Name: cadence-system
-IsGlobal(XDC)Domain: false
-....
-```
+
+## How to add a new tool
+
+1. Implement the tool in main.go
+2. Build the server executable
+3. Restart Cursor
+4. Ask a relevant questions and test it out

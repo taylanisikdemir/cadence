@@ -1,9 +1,0 @@
-{
-    "mcpServers": {
-      "cadence-mcp-server": {
-          "command": ".bin/cadence_mcp",
-          "args": [],
-          "env": {}
-        }
-    }
-}
