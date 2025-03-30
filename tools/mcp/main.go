@@ -95,7 +95,7 @@ func domainRRHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.Cal
 		return mcp.NewToolResultText("Yes, this domain is resilient to regional outages"), nil
 	}
 
-	return mcp.NewToolResultText("No, this domain is not resilient to regional outages"), nil
+	return mcp.NewToolResultText("No, this domain is not resilient to regional outages. Consider making it a global domain."), nil
 }
 
 func debugLog(format string, args ...interface{}) {
