@@ -34,10 +34,6 @@ func main() {
 			mcp.DefaultString("localhost:7833"),
 			mcp.Description("gRPC endpoint of the cadence domain"),
 		),
-		mcp.WithString("environment",
-			mcp.DefaultString("development"),
-			mcp.Description("Environment of the cadence domain"),
-		),
 	), domainRRHandler)
 
 	debugLog("Cadence MCP started")
@@ -70,21 +66,16 @@ func domainRRHandler(ctx context.Context, request mcp.CallToolRequest) (*mcp.Cal
 		endpoint = "localhost:7833"
 	}
 
-	environment, ok := request.Params.Arguments["environment"].(string)
-	if !ok {
-		environment = "development"
-	}
-
 	// run cadence CLI to check if it's a global domain or not
-	cmd := exec.Command("cadence",
+	cmd := exec.Command("docker", "run", "-t", "--rm", "--network", "host", "ubercadence/cli:master",
 		"--transport", "grpc",
 		"--address", endpoint,
-		"--env", environment,
 		"--domain", domain,
 		"domain", "describe")
-	output, err := cmd.Output()
+	// run the cmd and capture both stdout and stderr
+	output, err := cmd.CombinedOutput()
 	if err != nil {
-		debugLog("Error checking domain resilience: %v, %v\n", err, string(output))
+		debugLog("Error checking domain resilience: %v, %s\n", err, string(output))
 		return mcp.NewToolResultText("Error checking domain resilience: " + err.Error() + "\n" + string(output)), nil
 	}
 
