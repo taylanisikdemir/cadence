@@ -25,6 +25,7 @@ import (
 	"math/rand"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -33,15 +34,20 @@ import (
 )
 
 type loggerImpl struct {
-	zapLogger     *zap.Logger
-	skip          int
-	sampleLocalFn func(int) bool
+	zapLogger                  *zap.Logger
+	skip                       int
+	sampleLocalFn              func(int) bool
+	debugOn                    int32
+	debugOnCheckTimestampNanos int64
+	debugCheckInterval         time.Duration
 }
 
 const (
 	skipForDefaultLogger = 3
 	// we put a default message when it is empty so that the log can be searchable/filterable
 	defaultMsgForEmpty = "none"
+	// debugCheckInterval is the interval to check if debug level is on
+	debugCheckInterval = 10 * time.Second
 )
 
 var defaultSampleFn = func(i int) bool { return rand.Intn(i) == 0 }
@@ -49,9 +55,10 @@ var defaultSampleFn = func(i int) bool { return rand.Intn(i) == 0 }
 // NewLogger returns a new logger
 func NewLogger(zapLogger *zap.Logger, opts ...Option) Logger {
 	impl := &loggerImpl{
-		zapLogger:     zapLogger,
-		skip:          skipForDefaultLogger,
-		sampleLocalFn: defaultSampleFn,
+		zapLogger:          zapLogger,
+		skip:               skipForDefaultLogger,
+		sampleLocalFn:      defaultSampleFn,
+		debugCheckInterval: debugCheckInterval,
 	}
 	for _, opt := range opts {
 		opt(impl)

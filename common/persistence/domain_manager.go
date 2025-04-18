@@ -105,6 +105,7 @@ func (m *domainManagerImpl) GetDomain(
 	if internalResp.FailoverEndTime != nil {
 		resp.FailoverEndTime = common.Int64Ptr(internalResp.FailoverEndTime.UnixNano())
 	}
+
 	return resp, nil
 }
 
@@ -176,6 +177,7 @@ func (m *domainManagerImpl) ListDomains(
 		if d.FailoverEndTime != nil {
 			currResp.FailoverEndTime = common.Int64Ptr(d.FailoverEndTime.UnixNano())
 		}
+
 		domains = append(domains, currResp)
 	}
 	return &ListDomainsResponse{

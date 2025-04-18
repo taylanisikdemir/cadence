@@ -2174,9 +2174,10 @@ const (
 
 // EntityNotExistsError is an internal type (TBD...)
 type EntityNotExistsError struct {
-	Message        string `json:"message,required"`
-	CurrentCluster string `json:"currentCluster,omitempty"`
-	ActiveCluster  string `json:"activeCluster,omitempty"`
+	Message        string   `json:"message,required"`
+	CurrentCluster string   `json:"currentCluster,omitempty"`
+	ActiveCluster  string   `json:"activeCluster,omitempty"`
+	ActiveClusters []string `json:"activeClusters,omitempty"`
 }
 
 // WorkflowExecutionAlreadyCompletedError is an internal type (TBD...)

@@ -102,6 +102,13 @@ func TestThriftDecodeHelper(t *testing.T) {
 			encoding:  "hex",
 			wantObjFn: generateTestTimerInfo,
 		},
+		// TODO(active-active): Fix this test
+		{
+			desc:      "ReplicationTaskInfo hex",
+			input:     "WQ8ACgwAAAACCgAKAAAAAAAAAEMKABQYMu+L40Wn6wgAHgAAABIKACMAAAAAAAAAAgoAJAAAAAAAEABQDAC+CwAKAAAAAjExCgAUAAAAAAAAAD0AAAoACgAAAAAAAABECgAUGDLvi+NGf2kIAB4AAAAECgAjAAAAAAAAAAIKACQAAAAAABAAUgwAUAwACgsACgAAAA10ZXN0LXRhc2tsaXN0AAgAFAAAAAUKAB4AAAAAAAAAAAAAAA==",
+			encoding:  "base64",
+			wantObjFn: func(t *testing.T) codec.ThriftObject { return nil },
+		},
 	}
 
 	for _, tc := range tests {
