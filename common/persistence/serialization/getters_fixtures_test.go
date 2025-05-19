@@ -227,6 +227,7 @@ var expectedNil = map[string]map[string]any{
 	},
 	"*serialization.DomainInfo": {
 		"GetActiveClusterName":           "",
+		"GetActiveClusters":              (*types.ActiveClusters)(nil),
 		"GetArchivalBucket":              "",
 		"GetArchivalStatus":              int16(0),
 		"GetBadBinaries":                 []uint8(nil),
@@ -468,6 +469,7 @@ var expectedEmpty = map[string]map[string]any{
 	},
 	"*serialization.DomainInfo": {
 		"GetActiveClusterName":           "",
+		"GetActiveClusters":              (*types.ActiveClusters)(nil),
 		"GetArchivalBucket":              "",
 		"GetArchivalStatus":              int16(0),
 		"GetBadBinaries":                 []uint8(nil),
@@ -717,7 +719,15 @@ var expectedNonEmpty = map[string]map[string]any{
 		"GetInfo":             "historyTreeInfo",
 	},
 	"*serialization.DomainInfo": {
-		"GetActiveClusterName":           "cluster1",
+		"GetActiveClusterName": "cluster1",
+		"GetActiveClusters": &types.ActiveClusters{
+			ActiveClustersByRegion: map[string]types.ActiveClusterInfo{
+				"region1": {
+					ActiveClusterName: "cluster1",
+					FailoverVersion:   1,
+				},
+			},
+		},
 		"GetArchivalBucket":              "archivalBucket",
 		"GetArchivalStatus":              int16(2),
 		"GetBadBinaries":                 []byte("badBinaries"),
