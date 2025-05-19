@@ -116,21 +116,7 @@ func TestVerifyActiveTask(t *testing.T) {
 		{
 			name: "Domain is active-active mode, task is not active in current cluster so should be skipped",
 			setupMocks: func(mockDomainCache *cache.MockDomainCache, activeClusterMgr *activecluster.MockManager) {
-				// Set up a domainEntry that is global and has a nil FailoverEndTime
-				domainEntry := cache.NewDomainCacheEntryForTest(
-					nil,
-					nil,
-					true,
-					&persistence.DomainReplicationConfig{
-						// ActiveClusters is not nil which means it's active-active
-						ActiveClusters: &persistence.ActiveClustersConfig{},
-					},
-					1,
-					nil,
-					1,
-					1,
-					1,
-				)
+				domainEntry := activeActiveDomainEntry()
 				mockDomainCache.EXPECT().GetDomainByID(domainID).Return(domainEntry, nil)
 				activeClusterMgr.EXPECT().LookupWorkflow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&activecluster.LookupResult{
@@ -142,21 +128,7 @@ func TestVerifyActiveTask(t *testing.T) {
 		{
 			name: "Domain is active-active mode, task is active in current cluster so should be processed",
 			setupMocks: func(mockDomainCache *cache.MockDomainCache, activeClusterMgr *activecluster.MockManager) {
-				// Set up a domainEntry that is global and has a nil FailoverEndTime
-				domainEntry := cache.NewDomainCacheEntryForTest(
-					nil,
-					nil,
-					true,
-					&persistence.DomainReplicationConfig{
-						// ActiveClusters is not nil which means it's active-active
-						ActiveClusters: &persistence.ActiveClustersConfig{},
-					},
-					1,
-					nil,
-					1,
-					1,
-					1,
-				)
+				domainEntry := activeActiveDomainEntry()
 				mockDomainCache.EXPECT().GetDomainByID(domainID).Return(domainEntry, nil)
 				activeClusterMgr.EXPECT().LookupWorkflow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&activecluster.LookupResult{
@@ -168,21 +140,7 @@ func TestVerifyActiveTask(t *testing.T) {
 		{
 			name: "Domain is active-active mode, activeness lookup returns error",
 			setupMocks: func(mockDomainCache *cache.MockDomainCache, activeClusterMgr *activecluster.MockManager) {
-				// Set up a domainEntry that is global and has a nil FailoverEndTime
-				domainEntry := cache.NewDomainCacheEntryForTest(
-					nil,
-					nil,
-					true,
-					&persistence.DomainReplicationConfig{
-						// ActiveClusters is not nil which means it's active-active
-						ActiveClusters: &persistence.ActiveClustersConfig{},
-					},
-					1,
-					nil,
-					1,
-					1,
-					1,
-				)
+				domainEntry := activeActiveDomainEntry()
 				mockDomainCache.EXPECT().GetDomainByID(domainID).Return(domainEntry, nil)
 				activeClusterMgr.EXPECT().LookupWorkflow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil, errors.New("some error"))
@@ -493,21 +451,7 @@ func TestVerifyStandbyTask(t *testing.T) {
 		{
 			name: "Domain is active-active mode, task is not active in standby cluster so should be skipped",
 			setupMocks: func(mockDomainCache *cache.MockDomainCache, activeClusterMgr *activecluster.MockManager) {
-				// Set up a domainEntry that is global and has a nil FailoverEndTime
-				domainEntry := cache.NewDomainCacheEntryForTest(
-					nil,
-					nil,
-					true,
-					&persistence.DomainReplicationConfig{
-						// ActiveClusters is not nil which means it's active-active
-						ActiveClusters: &persistence.ActiveClustersConfig{},
-					},
-					1,
-					nil,
-					1,
-					1,
-					1,
-				)
+				domainEntry := activeActiveDomainEntry()
 				mockDomainCache.EXPECT().GetDomainByID(domainID).Return(domainEntry, nil)
 				activeClusterMgr.EXPECT().LookupWorkflow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&activecluster.LookupResult{
@@ -521,21 +465,7 @@ func TestVerifyStandbyTask(t *testing.T) {
 		{
 			name: "Domain is active-active mode, task is active in standby cluster so should be processed",
 			setupMocks: func(mockDomainCache *cache.MockDomainCache, activeClusterMgr *activecluster.MockManager) {
-				// Set up a domainEntry that is global and has a nil FailoverEndTime
-				domainEntry := cache.NewDomainCacheEntryForTest(
-					nil,
-					nil,
-					true,
-					&persistence.DomainReplicationConfig{
-						// ActiveClusters is not nil which means it's active-active
-						ActiveClusters: &persistence.ActiveClustersConfig{},
-					},
-					1,
-					nil,
-					1,
-					1,
-					1,
-				)
+				domainEntry := activeActiveDomainEntry()
 				mockDomainCache.EXPECT().GetDomainByID(domainID).Return(domainEntry, nil)
 				activeClusterMgr.EXPECT().LookupWorkflow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&activecluster.LookupResult{
@@ -549,21 +479,7 @@ func TestVerifyStandbyTask(t *testing.T) {
 		{
 			name: "Domain is active-active mode, activeness lookup returns error",
 			setupMocks: func(mockDomainCache *cache.MockDomainCache, activeClusterMgr *activecluster.MockManager) {
-				// Set up a domainEntry that is global and has a nil FailoverEndTime
-				domainEntry := cache.NewDomainCacheEntryForTest(
-					nil,
-					nil,
-					true,
-					&persistence.DomainReplicationConfig{
-						// ActiveClusters is not nil which means it's active-active
-						ActiveClusters: &persistence.ActiveClustersConfig{},
-					},
-					1,
-					nil,
-					1,
-					1,
-					1,
-				)
+				domainEntry := activeActiveDomainEntry()
 				mockDomainCache.EXPECT().GetDomainByID(domainID).Return(domainEntry, nil)
 				activeClusterMgr.EXPECT().LookupWorkflow(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil, errors.New("some error"))
@@ -677,4 +593,28 @@ func TestLockUnlock(t *testing.T) {
 	allocator := &taskAllocatorImpl{}
 	allocator.Lock()
 	defer allocator.Unlock()
+}
+
+func activeActiveDomainEntry() *cache.DomainCacheEntry {
+	// The specific versions are not important, as long as it's active-active.
+	// Having a DomainReplicationConfig with non-zero length ActiveClusters is enough to make it active-active.
+	return cache.NewDomainCacheEntryForTest(
+		nil,
+		nil,
+		true,
+		&persistence.DomainReplicationConfig{
+			// Populate ActiveClusters to make it active-active
+			ActiveClusters: &types.ActiveClusters{ActiveClustersByRegion: map[string]types.ActiveClusterInfo{
+				"us-west": {
+					ActiveClusterName: "cluster0",
+					FailoverVersion:   1,
+				},
+			}},
+		},
+		1,
+		nil,
+		1,
+		1,
+		1,
+	)
 }
