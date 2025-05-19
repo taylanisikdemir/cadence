@@ -296,7 +296,7 @@ func Test_IsActiveIn(t *testing.T) {
 		isGlobalDomain   bool
 		currentCluster   string
 		activeCluster    string
-		activeClusters   *persistence.ActiveClustersConfig
+		activeClusters   *types.ActiveClusters
 		failoverDeadline *int64
 		expectIsActive   bool
 		expectedErr      error
@@ -341,8 +341,8 @@ func Test_IsActiveIn(t *testing.T) {
 			msg:            "active-active domain on active cluster",
 			isGlobalDomain: true,
 			currentCluster: "A",
-			activeClusters: &persistence.ActiveClustersConfig{
-				RegionToClusterMap: map[string]persistence.ActiveClusterConfig{
+			activeClusters: &types.ActiveClusters{
+				ActiveClustersByRegion: map[string]types.ActiveClusterInfo{
 					"region0": {ActiveClusterName: "A"},
 					"region1": {ActiveClusterName: "B"},
 				},
@@ -353,8 +353,8 @@ func Test_IsActiveIn(t *testing.T) {
 			msg:            "active-active domain on passive cluster",
 			isGlobalDomain: true,
 			currentCluster: "C",
-			activeClusters: &persistence.ActiveClustersConfig{
-				RegionToClusterMap: map[string]persistence.ActiveClusterConfig{
+			activeClusters: &types.ActiveClusters{
+				ActiveClustersByRegion: map[string]types.ActiveClusterInfo{
 					"region0": {ActiveClusterName: "A"},
 					"region1": {ActiveClusterName: "B"},
 				},

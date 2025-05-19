@@ -2103,6 +2103,19 @@ type ActiveClusterInfo struct {
 	FailoverVersion   int64  `json:"failoverVersion,omitempty"`
 }
 
+func (v *ActiveClusters) DeepCopy() *ActiveClusters {
+	if v == nil {
+		return nil
+	}
+	activeClustersByRegion := make(map[string]ActiveClusterInfo)
+	for region, activeClusterInfo := range v.ActiveClustersByRegion {
+		activeClustersByRegion[region] = activeClusterInfo
+	}
+	return &ActiveClusters{
+		ActiveClustersByRegion: activeClustersByRegion,
+	}
+}
+
 // DomainStatus is an internal type (TBD...)
 type DomainStatus int32
 

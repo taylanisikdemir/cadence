@@ -833,7 +833,7 @@ func (entry *DomainCacheEntry) IsActiveIn(currentCluster string) (bool, error) {
 
 	if entry.GetReplicationConfig().IsActiveActive() {
 		var activeClusters []string
-		for _, cl := range entry.GetReplicationConfig().ActiveClusters.RegionToClusterMap {
+		for _, cl := range entry.GetReplicationConfig().ActiveClusters.ActiveClustersByRegion {
 			if cl.ActiveClusterName == currentCluster {
 				return true, nil
 			}
