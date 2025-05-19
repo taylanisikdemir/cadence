@@ -210,7 +210,7 @@ func (m *managerImpl) FailoverVersionOfNewWorkflow(ctx context.Context, req *typ
 	// If external entity headers are not provided, consider it as region sticky workflow.
 	// Return failover version of the active cluster in current region.
 	region := m.clusterMetadata.GetCurrentRegion()
-	cluster, ok := d.GetReplicationConfig().ActiveClusters.RegionToClusterMap[region]
+	cluster, ok := d.GetReplicationConfig().ActiveClusters.ActiveClustersByRegion[region]
 	if !ok {
 		return 0, newRegionNotFoundForDomainError(region, req.DomainUUID)
 	}
@@ -269,7 +269,7 @@ func (m *managerImpl) LookupWorkflow(ctx context.Context, domainID, wfID, rID st
 		}, nil
 	}
 
-	cluster, ok := d.GetReplicationConfig().ActiveClusters.RegionToClusterMap[region]
+	cluster, ok := d.GetReplicationConfig().ActiveClusters.ActiveClustersByRegion[region]
 	if !ok {
 		return nil, newRegionNotFoundForDomainError(region, domainID)
 	}
@@ -310,7 +310,7 @@ func (m *managerImpl) ClusterNameForFailoverVersion(failoverVersion int64, domai
 	}
 
 	// Now we know the region, find the cluster in the domain's active cluster list which belongs to the region
-	cfg, ok := d.GetReplicationConfig().ActiveClusters.RegionToClusterMap[region]
+	cfg, ok := d.GetReplicationConfig().ActiveClusters.ActiveClustersByRegion[region]
 	if !ok {
 		return "", newRegionNotFoundForDomainError(region, domainID)
 	}

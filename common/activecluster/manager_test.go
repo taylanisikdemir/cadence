@@ -132,7 +132,7 @@ func TestNotifyChangeCallbacks(t *testing.T) {
 func TestClusterNameForFailoverVersion(t *testing.T) {
 	tests := []struct {
 		name                 string
-		activeClusterCfg     *persistence.ActiveClustersConfig
+		activeClusterCfg     *types.ActiveClusters
 		clusterGroupMetadata config.ClusterGroupMetadata
 		failoverVersion      int64
 		expectedResult       string
@@ -174,8 +174,8 @@ func TestClusterNameForFailoverVersion(t *testing.T) {
 		},
 		{
 			name: "active-active domain, failover version maps to a cluster in metadata",
-			activeClusterCfg: &persistence.ActiveClustersConfig{
-				RegionToClusterMap: map[string]persistence.ActiveClusterConfig{
+			activeClusterCfg: &types.ActiveClusters{
+				ActiveClustersByRegion: map[string]types.ActiveClusterInfo{
 					"us-west": {
 						ActiveClusterName: "cluster1",
 						FailoverVersion:   0,
@@ -202,8 +202,8 @@ func TestClusterNameForFailoverVersion(t *testing.T) {
 		},
 		{
 			name: "active-active domain, failover version maps to a region in metadata",
-			activeClusterCfg: &persistence.ActiveClustersConfig{
-				RegionToClusterMap: map[string]persistence.ActiveClusterConfig{
+			activeClusterCfg: &types.ActiveClusters{
+				ActiveClustersByRegion: map[string]types.ActiveClusterInfo{
 					"us-west": {
 						ActiveClusterName: "cluster1",
 						FailoverVersion:   0,
@@ -238,8 +238,8 @@ func TestClusterNameForFailoverVersion(t *testing.T) {
 		},
 		{
 			name: "active-active domain, failover version doesn't map to a cluster or region",
-			activeClusterCfg: &persistence.ActiveClustersConfig{
-				RegionToClusterMap: map[string]persistence.ActiveClusterConfig{
+			activeClusterCfg: &types.ActiveClusters{
+				ActiveClustersByRegion: map[string]types.ActiveClusterInfo{
 					"us-west": {
 						ActiveClusterName: "cluster1",
 						FailoverVersion:   0,
@@ -274,8 +274,8 @@ func TestClusterNameForFailoverVersion(t *testing.T) {
 		},
 		{
 			name: "active-active domain, failover version maps to a region in metadata but it's missing in domain's active cluster config",
-			activeClusterCfg: &persistence.ActiveClustersConfig{
-				RegionToClusterMap: map[string]persistence.ActiveClusterConfig{
+			activeClusterCfg: &types.ActiveClusters{
+				ActiveClustersByRegion: map[string]types.ActiveClusterInfo{
 					// us-west is missing in the domain's active cluster config
 					"us-east": {
 						ActiveClusterName: "cluster2",
@@ -307,8 +307,8 @@ func TestClusterNameForFailoverVersion(t *testing.T) {
 		},
 		{
 			name: "active-active domain, failover version maps to a region and domain's active cluster config has a cluster for the region but cluster metadata doesn't have the cluster",
-			activeClusterCfg: &persistence.ActiveClustersConfig{
-				RegionToClusterMap: map[string]persistence.ActiveClusterConfig{
+			activeClusterCfg: &types.ActiveClusters{
+				ActiveClustersByRegion: map[string]types.ActiveClusterInfo{
 					"us-west": {
 						ActiveClusterName: "cluster0",
 						FailoverVersion:   0,
@@ -405,7 +405,7 @@ func TestFailoverVersionOfNewWorkflow(t *testing.T) {
 		name                    string
 		req                     *types.HistoryStartWorkflowExecutionRequest
 		externalEntityProviders func(ctrl *gomock.Controller) []ExternalEntityProvider
-		activeClusterCfg        *persistence.ActiveClustersConfig
+		activeClusterCfg        *types.ActiveClusters
 		expectedFailoverVersion int64
 		expectedError           string
 	}{
@@ -428,8 +428,15 @@ func TestFailoverVersionOfNewWorkflow(t *testing.T) {
 				DomainUUID:   "test-domain-id",
 				StartRequest: nil,
 			},
-			activeClusterCfg: &persistence.ActiveClustersConfig{},
-			expectedError:    "start request is nil",
+			activeClusterCfg: &types.ActiveClusters{
+				ActiveClustersByRegion: map[string]types.ActiveClusterInfo{
+					"us-west": {
+						ActiveClusterName: "cluster0",
+						FailoverVersion:   1,
+					},
+				},
+			},
+			expectedError: "start request is nil",
 		},
 		{
 			name: "active-active domain, start request has external entity headers but corresponding provider is missing",
@@ -444,8 +451,15 @@ func TestFailoverVersionOfNewWorkflow(t *testing.T) {
 					},
 				},
 			},
-			activeClusterCfg: &persistence.ActiveClustersConfig{},
-			expectedError:    "external entity provider for source \"city\" not found",
+			activeClusterCfg: &types.ActiveClusters{
+				ActiveClustersByRegion: map[string]types.ActiveClusterInfo{
+					"us-west": {
+						ActiveClusterName: "cluster0",
+						FailoverVersion:   1,
+					},
+				},
+			},
+			expectedError: "external entity provider for source \"city\" not found",
 		},
 		{
 			name: "active-active domain, start request has external entity headers. successfully get failover version from external entity",
@@ -460,7 +474,14 @@ func TestFailoverVersionOfNewWorkflow(t *testing.T) {
 					},
 				},
 			},
-			activeClusterCfg: &persistence.ActiveClustersConfig{},
+			activeClusterCfg: &types.ActiveClusters{
+				ActiveClustersByRegion: map[string]types.ActiveClusterInfo{
+					"us-west": {
+						ActiveClusterName: "cluster0",
+						FailoverVersion:   1,
+					},
+				},
+			},
 			externalEntityProviders: func(ctrl *gomock.Controller) []ExternalEntityProvider {
 				externalEntityProvider := NewMockExternalEntityProvider(ctrl)
 				externalEntityProvider.EXPECT().SupportedSource().Return("city").AnyTimes()
@@ -480,8 +501,8 @@ func TestFailoverVersionOfNewWorkflow(t *testing.T) {
 					Header: &types.Header{},
 				},
 			},
-			activeClusterCfg: &persistence.ActiveClustersConfig{
-				RegionToClusterMap: map[string]persistence.ActiveClusterConfig{
+			activeClusterCfg: &types.ActiveClusters{
+				ActiveClustersByRegion: map[string]types.ActiveClusterInfo{
 					"us-west": {
 						ActiveClusterName: "cluster0",
 						FailoverVersion:   20,
@@ -503,8 +524,8 @@ func TestFailoverVersionOfNewWorkflow(t *testing.T) {
 					Header: &types.Header{},
 				},
 			},
-			activeClusterCfg: &persistence.ActiveClustersConfig{
-				RegionToClusterMap: map[string]persistence.ActiveClusterConfig{
+			activeClusterCfg: &types.ActiveClusters{
+				ActiveClustersByRegion: map[string]types.ActiveClusterInfo{
 					// missing "us-west" here
 					"us-east": {
 						ActiveClusterName: "cluster1",
@@ -586,7 +607,7 @@ func TestLookupWorkflow(t *testing.T) {
 		name                            string
 		externalEntityProviders         func(ctrl *gomock.Controller) []ExternalEntityProvider
 		getWorkflowActivenessMetadataFn func(ctx context.Context, domainID, wfID, rID string) (*WorkflowActivenessMetadata, error)
-		activeClusterCfg                *persistence.ActiveClustersConfig
+		activeClusterCfg                *types.ActiveClusters
 		expectedResult                  *LookupResult
 		expectedError                   string
 	}{
@@ -599,16 +620,38 @@ func TestLookupWorkflow(t *testing.T) {
 			},
 		},
 		{
-			name:             "domain is active-active, failed to fetch workflow activeness metadata",
-			activeClusterCfg: &persistence.ActiveClustersConfig{},
+			name: "domain is active-active, failed to fetch workflow activeness metadata",
+			activeClusterCfg: &types.ActiveClusters{
+				ActiveClustersByRegion: map[string]types.ActiveClusterInfo{
+					"us-west": {
+						ActiveClusterName: "cluster0",
+						FailoverVersion:   1,
+					},
+					"us-east": {
+						ActiveClusterName: "cluster1",
+						FailoverVersion:   3,
+					},
+				},
+			},
 			getWorkflowActivenessMetadataFn: func(ctx context.Context, domainID, wfID, rID string) (*WorkflowActivenessMetadata, error) {
 				return nil, errors.New("failed to fetch workflow activeness metadata")
 			},
 			expectedError: "failed to fetch workflow activeness metadata",
 		},
 		{
-			name:             "domain is active-active, activeness metadata not-found which means region sticky",
-			activeClusterCfg: &persistence.ActiveClustersConfig{},
+			name: "domain is active-active, activeness metadata not-found which means region sticky",
+			activeClusterCfg: &types.ActiveClusters{
+				ActiveClustersByRegion: map[string]types.ActiveClusterInfo{
+					"us-west": {
+						ActiveClusterName: "cluster0",
+						FailoverVersion:   1,
+					},
+					"us-east": {
+						ActiveClusterName: "cluster1",
+						FailoverVersion:   3,
+					},
+				},
+			},
 			getWorkflowActivenessMetadataFn: func(ctx context.Context, domainID, wfID, rID string) (*WorkflowActivenessMetadata, error) {
 				return nil, &types.EntityNotExistsError{}
 			},
@@ -619,8 +662,8 @@ func TestLookupWorkflow(t *testing.T) {
 		},
 		{
 			name: "domain is active-active, activeness metadata shows region sticky",
-			activeClusterCfg: &persistence.ActiveClustersConfig{
-				RegionToClusterMap: map[string]persistence.ActiveClusterConfig{
+			activeClusterCfg: &types.ActiveClusters{
+				ActiveClustersByRegion: map[string]types.ActiveClusterInfo{
 					"us-west": {
 						ActiveClusterName: "cluster0",
 						FailoverVersion:   1,
@@ -645,8 +688,8 @@ func TestLookupWorkflow(t *testing.T) {
 		},
 		{
 			name: "domain is active-active, activeness metadata shows external entity",
-			activeClusterCfg: &persistence.ActiveClustersConfig{
-				RegionToClusterMap: map[string]persistence.ActiveClusterConfig{
+			activeClusterCfg: &types.ActiveClusters{
+				ActiveClustersByRegion: map[string]types.ActiveClusterInfo{
 					"us-west": {
 						ActiveClusterName: "cluster0",
 						FailoverVersion:   1,
@@ -724,7 +767,7 @@ func TestLookupWorkflow(t *testing.T) {
 	}
 }
 
-func getDomainCacheEntry(cfg *persistence.ActiveClustersConfig) *cache.DomainCacheEntry {
+func getDomainCacheEntry(cfg *types.ActiveClusters) *cache.DomainCacheEntry {
 	// only thing we care in domain cache entry is the active clusters config
 	return cache.NewDomainCacheEntryForTest(
 		nil,
