@@ -134,6 +134,7 @@ func (m *sqlDomainStore) CreateDomain(
 		VisibilityArchivalStatus:    int16(request.Config.VisibilityArchivalStatus),
 		VisibilityArchivalURI:       request.Config.VisibilityArchivalURI,
 		ActiveClusterName:           request.ReplicationConfig.ActiveClusterName,
+		ActiveClusters:              request.ReplicationConfig.ActiveClusters,
 		Clusters:                    clusters,
 		ConfigVersion:               request.ConfigVersion,
 		FailoverVersion:             request.FailoverVersion,
@@ -279,6 +280,7 @@ func (m *sqlDomainStore) domainRowToGetDomainResponse(row *sqlplugin.DomainRow) 
 		ReplicationConfig: &persistence.DomainReplicationConfig{
 			ActiveClusterName: cluster.GetOrUseDefaultActiveCluster(m.activeClusterName, domainInfo.GetActiveClusterName()),
 			Clusters:          cluster.GetOrUseDefaultClusters(m.activeClusterName, clusters),
+			ActiveClusters:    domainInfo.GetActiveClusters(),
 		},
 		IsGlobalDomain:              row.IsGlobal,
 		FailoverVersion:             domainInfo.GetFailoverVersion(),
@@ -336,6 +338,7 @@ func (m *sqlDomainStore) UpdateDomain(
 		VisibilityArchivalStatus:    int16(request.Config.VisibilityArchivalStatus),
 		VisibilityArchivalURI:       request.Config.VisibilityArchivalURI,
 		ActiveClusterName:           request.ReplicationConfig.ActiveClusterName,
+		ActiveClusters:              request.ReplicationConfig.ActiveClusters,
 		Clusters:                    clusters,
 		ConfigVersion:               request.ConfigVersion,
 		FailoverVersion:             request.FailoverVersion,

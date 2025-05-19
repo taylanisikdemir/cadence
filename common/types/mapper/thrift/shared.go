@@ -2040,6 +2040,7 @@ func FromDomainNotActiveError(t *types.DomainNotActiveError) *shared.DomainNotAc
 		DomainName:     t.DomainName,
 		CurrentCluster: t.CurrentCluster,
 		ActiveCluster:  t.ActiveCluster,
+		ActiveClusters: t.ActiveClusters,
 	}
 }
 
@@ -2053,6 +2054,7 @@ func ToDomainNotActiveError(t *shared.DomainNotActiveError) *types.DomainNotActi
 		DomainName:     t.DomainName,
 		CurrentCluster: t.CurrentCluster,
 		ActiveCluster:  t.ActiveCluster,
+		ActiveClusters: t.ActiveClusters,
 	}
 }
 
@@ -2064,6 +2066,7 @@ func FromDomainReplicationConfiguration(t *types.DomainReplicationConfiguration)
 	return &shared.DomainReplicationConfiguration{
 		ActiveClusterName: &t.ActiveClusterName,
 		Clusters:          FromClusterReplicationConfigurationArray(t.Clusters),
+		ActiveClusters:    FromActiveClusters(t.ActiveClusters),
 	}
 }
 
@@ -2075,6 +2078,42 @@ func ToDomainReplicationConfiguration(t *shared.DomainReplicationConfiguration) 
 	return &types.DomainReplicationConfiguration{
 		ActiveClusterName: t.GetActiveClusterName(),
 		Clusters:          ToClusterReplicationConfigurationArray(t.Clusters),
+		ActiveClusters:    ToActiveClusters(t.ActiveClusters),
+	}
+}
+
+// FromActiveClusters converts internal ActiveClusters type to thrift
+func FromActiveClusters(t *types.ActiveClusters) *shared.ActiveClusters {
+	if t == nil {
+		return nil
+	}
+	regionToCluster := make(map[string]*shared.ActiveClusterInfo)
+	for region, cluster := range t.ActiveClustersByRegion {
+		regionToCluster[region] = &shared.ActiveClusterInfo{
+			ActiveClusterName: &cluster.ActiveClusterName,
+			FailoverVersion:   &cluster.FailoverVersion,
+		}
+	}
+	return &shared.ActiveClusters{
+		ActiveClustersByRegion: regionToCluster,
+	}
+}
+
+// ToActiveClusters converts thrift ActiveClusters type to internal
+func ToActiveClusters(t *shared.ActiveClusters) *types.ActiveClusters {
+	if t == nil {
+		return nil
+	}
+
+	activeClustersByRegion := make(map[string]types.ActiveClusterInfo)
+	for region, cluster := range t.ActiveClustersByRegion {
+		activeClustersByRegion[region] = types.ActiveClusterInfo{
+			ActiveClusterName: *cluster.ActiveClusterName,
+			FailoverVersion:   *cluster.FailoverVersion,
+		}
+	}
+	return &types.ActiveClusters{
+		ActiveClustersByRegion: activeClustersByRegion,
 	}
 }
 
@@ -2157,6 +2196,7 @@ func FromEntityNotExistsError(t *types.EntityNotExistsError) *shared.EntityNotEx
 		Message:        t.Message,
 		CurrentCluster: &t.CurrentCluster,
 		ActiveCluster:  &t.ActiveCluster,
+		ActiveClusters: t.ActiveClusters,
 	}
 }
 
@@ -2169,6 +2209,7 @@ func ToEntityNotExistsError(t *shared.EntityNotExistsError) *types.EntityNotExis
 		Message:        t.Message,
 		CurrentCluster: t.GetCurrentCluster(),
 		ActiveCluster:  t.GetActiveCluster(),
+		ActiveClusters: t.GetActiveClusters(),
 	}
 }
 
@@ -4121,6 +4162,7 @@ func FromRegisterDomainRequest(t *types.RegisterDomainRequest) *shared.RegisterD
 		EmitMetric:                             t.EmitMetric,
 		Clusters:                               FromClusterReplicationConfigurationArray(t.Clusters),
 		ActiveClusterName:                      &t.ActiveClusterName,
+		ActiveClustersByRegion:                 t.ActiveClustersByRegion,
 		Data:                                   t.Data,
 		SecurityToken:                          &t.SecurityToken,
 		IsGlobalDomain:                         &t.IsGlobalDomain,
@@ -4144,6 +4186,7 @@ func ToRegisterDomainRequest(t *shared.RegisterDomainRequest) *types.RegisterDom
 		EmitMetric:                             t.EmitMetric,
 		Clusters:                               ToClusterReplicationConfigurationArray(t.Clusters),
 		ActiveClusterName:                      t.GetActiveClusterName(),
+		ActiveClustersByRegion:                 t.ActiveClustersByRegion,
 		Data:                                   t.Data,
 		SecurityToken:                          t.GetSecurityToken(),
 		IsGlobalDomain:                         t.GetIsGlobalDomain(),
@@ -5969,10 +6012,11 @@ func FromUpdateDomainRequest(t *types.UpdateDomainRequest) *shared.UpdateDomainR
 			VisibilityArchivalURI:                  t.VisibilityArchivalURI,
 		}
 	}
-	if t.ActiveClusterName != nil || t.Clusters != nil {
+	if t.ActiveClusterName != nil || t.Clusters != nil || t.ActiveClusters != nil {
 		request.ReplicationConfiguration = &shared.DomainReplicationConfiguration{
 			ActiveClusterName: t.ActiveClusterName,
 			Clusters:          FromClusterReplicationConfigurationArray(t.Clusters),
+			ActiveClusters:    FromActiveClusters(t.ActiveClusters),
 		}
 	}
 	return &request
@@ -6006,6 +6050,7 @@ func ToUpdateDomainRequest(t *shared.UpdateDomainRequest) *types.UpdateDomainReq
 	if t.ReplicationConfiguration != nil {
 		request.ActiveClusterName = t.ReplicationConfiguration.ActiveClusterName
 		request.Clusters = ToClusterReplicationConfigurationArray(t.ReplicationConfiguration.Clusters)
+		request.ActiveClusters = ToActiveClusters(t.ReplicationConfiguration.ActiveClusters)
 	}
 	return &request
 }

@@ -159,7 +159,6 @@ func (m Metadata) GetCurrentClusterName() string {
 }
 
 // GetCurrentRegion return the current region
-// TODO(active-active): Add tests
 func (m Metadata) GetCurrentRegion() string {
 	return m.currentRegion
 }

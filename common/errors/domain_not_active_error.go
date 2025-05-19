@@ -37,7 +37,7 @@ func NewDomainNotActiveError(domainName string, currentCluster string, activeClu
 	slices.Sort(activeClusters)
 	return &types.DomainNotActiveError{
 		Message: fmt.Sprintf(
-			"Domain: %s is active in cluster(s): %v, while current cluster %s is a standby cluster.",
+			"Domain: %s is active in cluster(s): %v (and potentially more), while current cluster %s is a standby cluster.",
 			domainName,
 			activeClusters,
 			currentCluster,
@@ -45,11 +45,7 @@ func NewDomainNotActiveError(domainName string, currentCluster string, activeClu
 		DomainName:     domainName,
 		CurrentCluster: currentCluster,
 		ActiveCluster:  activeCluster,
-		// TODO(active-active): After ActiveClusters field is introduced, uncomment this line and update following lines
-		// - common/types/testdata/error.go
-		// - common/testing/allisset_test.go
-		// - mappers
-		// ActiveClusters: activeClusters,
+		ActiveClusters: activeClusters,
 	}
 }
 

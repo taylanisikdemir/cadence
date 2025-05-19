@@ -76,6 +76,7 @@ type (
 		FailoverNotificationVersion int64
 		FailoverVersion             int64
 		ActiveClusterName           string
+		ActiveClusters              *types.ActiveClusters
 		Clusters                    []string
 		Data                        map[string]string
 		BadBinaries                 []byte

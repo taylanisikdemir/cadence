@@ -48,6 +48,7 @@ const (
 		`async_workflow_config_encoding: ?` +
 		`}`
 
+	// TODO(active-active): add active clusters config as a blob
 	templateDomainReplicationConfigType = `{` +
 		`active_cluster_name: ?, ` +
 		`clusters: ? ` +

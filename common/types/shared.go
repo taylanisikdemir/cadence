@@ -2033,10 +2033,11 @@ func (v *DomainInfo) GetUUID() (o string) {
 // this is a retriable error and *must* be retried under at least
 // some circumstances due to domain failover races.
 type DomainNotActiveError struct {
-	Message        string `json:"message"`
-	DomainName     string `json:"domainName"`
-	CurrentCluster string `json:"currentCluster"`
-	ActiveCluster  string `json:"activeCluster,omitempty"`
+	Message        string   `json:"message"`
+	DomainName     string   `json:"domainName"`
+	CurrentCluster string   `json:"currentCluster"`
+	ActiveCluster  string   `json:"activeCluster,omitempty"`
+	ActiveClusters []string `json:"activeClusters,omitempty"`
 }
 
 // GetCurrentCluster is an internal getter (TBD...)
@@ -2055,10 +2056,19 @@ func (v *DomainNotActiveError) GetActiveCluster() (o string) {
 	return
 }
 
+// GetActiveClusters is an internal getter (TBD...)
+func (v *DomainNotActiveError) GetActiveClusters() (o []string) {
+	if v != nil {
+		return v.ActiveClusters
+	}
+	return
+}
+
 // DomainReplicationConfiguration is an internal type (TBD...)
 type DomainReplicationConfiguration struct {
 	ActiveClusterName string                             `json:"activeClusterName,omitempty"`
 	Clusters          []*ClusterReplicationConfiguration `json:"clusters,omitempty"`
+	ActiveClusters    *ActiveClusters                    `json:"activeClusters,omitempty"`
 }
 
 // GetActiveClusterName is an internal getter (TBD...)
@@ -2075,6 +2085,22 @@ func (v *DomainReplicationConfiguration) GetClusters() (o []*ClusterReplicationC
 		return v.Clusters
 	}
 	return
+}
+
+func (v *DomainReplicationConfiguration) GetActiveClusters() (o *ActiveClusters) {
+	if v != nil && v.ActiveClusters != nil {
+		return v.ActiveClusters
+	}
+	return
+}
+
+type ActiveClusters struct {
+	ActiveClustersByRegion map[string]ActiveClusterInfo `json:"activeClustersByRegion,omitempty"`
+}
+
+type ActiveClusterInfo struct {
+	ActiveClusterName string `json:"activeClusterName,omitempty"`
+	FailoverVersion   int64  `json:"failoverVersion,omitempty"`
 }
 
 // DomainStatus is an internal type (TBD...)
@@ -2188,11 +2214,10 @@ const (
 
 // EntityNotExistsError is an internal type (TBD...)
 type EntityNotExistsError struct {
-	Message        string `json:"message,required"`
-	CurrentCluster string `json:"currentCluster,omitempty"`
-	ActiveCluster  string `json:"activeCluster,omitempty"`
-	// TODO(active-active): Add ActiveClusters field
-	// ActiveClusters []string `json:"activeClusters,omitempty"`
+	Message        string   `json:"message,required"`
+	CurrentCluster string   `json:"currentCluster,omitempty"`
+	ActiveCluster  string   `json:"activeCluster,omitempty"`
+	ActiveClusters []string `json:"activeClusters,omitempty"`
 }
 
 // WorkflowExecutionAlreadyCompletedError is an internal type (TBD...)
@@ -4803,6 +4828,7 @@ type RegisterDomainRequest struct {
 	EmitMetric                             *bool                              `json:"emitMetric,omitempty"`
 	Clusters                               []*ClusterReplicationConfiguration `json:"clusters,omitempty"`
 	ActiveClusterName                      string                             `json:"activeClusterName,omitempty"`
+	ActiveClustersByRegion                 map[string]string                  `json:"activeClustersByRegion,omitempty"`
 	Data                                   map[string]string                  `json:"data,omitempty"`
 	SecurityToken                          string                             `json:"securityToken,omitempty"`
 	IsGlobalDomain                         bool                               `json:"isGlobalDomain,omitempty"`
@@ -4857,6 +4883,14 @@ func (v *RegisterDomainRequest) GetEmitMetric() (o bool) {
 func (v *RegisterDomainRequest) GetActiveClusterName() (o string) {
 	if v != nil {
 		return v.ActiveClusterName
+	}
+	return
+}
+
+// GetActiveClustersByRegion is an internal getter (TBD...)
+func (v *RegisterDomainRequest) GetActiveClustersByRegion() (o map[string]string) {
+	if v != nil {
+		return v.ActiveClustersByRegion
 	}
 	return
 }
@@ -7190,6 +7224,7 @@ type UpdateDomainRequest struct {
 	VisibilityArchivalStatus               *ArchivalStatus                    `json:"visibilityArchivalStatus,omitempty"`
 	VisibilityArchivalURI                  *string                            `json:"visibilityArchivalURI,omitempty"`
 	ActiveClusterName                      *string                            `json:"activeClusterName,omitempty"`
+	ActiveClusters                         *ActiveClusters                    `json:"activeClusters,omitempty"`
 	Clusters                               []*ClusterReplicationConfiguration `json:"clusters,omitempty"`
 	SecurityToken                          string                             `json:"securityToken,omitempty"`
 	DeleteBadBinary                        *string                            `json:"deleteBadBinary,omitempty"`

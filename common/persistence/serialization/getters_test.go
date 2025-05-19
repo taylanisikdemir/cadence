@@ -300,6 +300,14 @@ func TestGettersForInfos(t *testing.T) {
 			FailoverVersion:             6,
 			ActiveClusterName:           "cluster1",
 			Clusters:                    []string{"cluster1", "cluster2"},
+			ActiveClusters: &types.ActiveClusters{
+				ActiveClustersByRegion: map[string]types.ActiveClusterInfo{
+					"region1": {
+						ActiveClusterName: "cluster1",
+						FailoverVersion:   1,
+					},
+				},
+			},
 			Data: map[string]string{
 				"datakey": "datavalue",
 			},

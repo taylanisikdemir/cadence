@@ -116,6 +116,7 @@ func ToError(err error) error {
 				Message:        status.Message(),
 				CurrentCluster: details.CurrentCluster,
 				ActiveCluster:  details.ActiveCluster,
+				ActiveClusters: details.ActiveClusters,
 			}
 		case *apiv1.WorkflowExecutionAlreadyCompletedError:
 			return &types.WorkflowExecutionAlreadyCompletedError{
@@ -210,6 +211,7 @@ func ToError(err error) error {
 				DomainName:     details.Domain,
 				CurrentCluster: details.CurrentCluster,
 				ActiveCluster:  details.ActiveCluster,
+				ActiveClusters: details.ActiveClusters,
 			}
 		}
 	case yarpcerrors.CodeResourceExhausted:
@@ -264,6 +266,7 @@ func fromEntityNotExistsError(e *types.EntityNotExistsError) error {
 	return protobuf.NewError(yarpcerrors.CodeNotFound, e.Message, protobuf.WithErrorDetails(&apiv1.EntityNotExistsError{
 		CurrentCluster: e.CurrentCluster,
 		ActiveCluster:  e.ActiveCluster,
+		ActiveClusters: e.ActiveClusters,
 	}))
 }
 
@@ -346,6 +349,7 @@ func fromDomainNotActive(e *types.DomainNotActiveError) error {
 		Domain:         e.DomainName,
 		CurrentCluster: e.CurrentCluster,
 		ActiveCluster:  e.ActiveCluster,
+		ActiveClusters: e.ActiveClusters,
 	}))
 }
 

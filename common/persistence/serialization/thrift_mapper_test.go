@@ -118,17 +118,29 @@ func TestDomainInfo(t *testing.T) {
 		FailoverNotificationVersion: int64(rand.Intn(1000)),
 		FailoverVersion:             int64(rand.Intn(1000)),
 		ActiveClusterName:           "ActiveClusterName",
-		Clusters:                    []string{"cluster_a", "cluster_b"},
-		Data:                        map[string]string{"key_1": "value_1", "key_2": "value_2"},
-		BadBinaries:                 []byte("BadBinaries"),
-		BadBinariesEncoding:         "BadBinariesEncoding",
-		HistoryArchivalStatus:       int16(rand.Intn(1000)),
-		HistoryArchivalURI:          "HistoryArchivalURI",
-		VisibilityArchivalStatus:    int16(rand.Intn(1000)),
-		VisibilityArchivalURI:       "VisibilityArchivalURI",
-		FailoverEndTimestamp:        common.TimePtr(time.Now()),
-		PreviousFailoverVersion:     int64(rand.Intn(1000)),
-		LastUpdatedTimestamp:        time.Now(),
+		ActiveClusters: &types.ActiveClusters{
+			ActiveClustersByRegion: map[string]types.ActiveClusterInfo{
+				"region1": {
+					ActiveClusterName: "cluster1",
+					FailoverVersion:   int64(rand.Intn(1000)),
+				},
+				"region2": {
+					ActiveClusterName: "cluster2",
+					FailoverVersion:   int64(rand.Intn(1000)),
+				},
+			},
+		},
+		Clusters:                 []string{"cluster_a", "cluster_b"},
+		Data:                     map[string]string{"key_1": "value_1", "key_2": "value_2"},
+		BadBinaries:              []byte("BadBinaries"),
+		BadBinariesEncoding:      "BadBinariesEncoding",
+		HistoryArchivalStatus:    int16(rand.Intn(1000)),
+		HistoryArchivalURI:       "HistoryArchivalURI",
+		VisibilityArchivalStatus: int16(rand.Intn(1000)),
+		VisibilityArchivalURI:    "VisibilityArchivalURI",
+		FailoverEndTimestamp:     common.TimePtr(time.Now()),
+		PreviousFailoverVersion:  int64(rand.Intn(1000)),
+		LastUpdatedTimestamp:     time.Now(),
 	}
 	actual := domainInfoFromThrift(domainInfoToThrift(expected))
 	assert.Equal(t, expected.Name, actual.Name)

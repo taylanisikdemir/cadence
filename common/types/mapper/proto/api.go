@@ -1111,6 +1111,7 @@ func FromDescribeDomainResponseDomain(t *types.DescribeDomainResponse) *apiv1.Do
 	if repl := t.ReplicationConfiguration; repl != nil {
 		domain.ActiveClusterName = repl.ActiveClusterName
 		domain.Clusters = FromClusterReplicationConfigurationArray(repl.Clusters)
+		domain.ActiveClusters = FromActiveClusters(repl.ActiveClusters)
 	}
 	if info := t.GetFailoverInfo(); info != nil {
 		domain.FailoverInfo = FromFailoverInfo(t.GetFailoverInfo())
@@ -1154,6 +1155,7 @@ func ToDescribeDomainResponseDomain(t *apiv1.Domain) *types.DescribeDomainRespon
 		ReplicationConfiguration: &types.DomainReplicationConfiguration{
 			ActiveClusterName: t.ActiveClusterName,
 			Clusters:          ToClusterReplicationConfigurationArray(t.Clusters),
+			ActiveClusters:    ToActiveClusters(t.ActiveClusters),
 		},
 		FailoverVersion: t.FailoverVersion,
 		IsGlobalDomain:  t.IsGlobalDomain,
@@ -2581,6 +2583,7 @@ func FromRegisterDomainRequest(t *types.RegisterDomainRequest) *apiv1.RegisterDo
 		WorkflowExecutionRetentionPeriod: daysToDuration(&t.WorkflowExecutionRetentionPeriodInDays),
 		Clusters:                         FromClusterReplicationConfigurationArray(t.Clusters),
 		ActiveClusterName:                t.ActiveClusterName,
+		ActiveClustersByRegion:           t.ActiveClustersByRegion,
 		Data:                             t.Data,
 		SecurityToken:                    t.SecurityToken,
 		IsGlobalDomain:                   t.IsGlobalDomain,
@@ -2603,6 +2606,7 @@ func ToRegisterDomainRequest(t *apiv1.RegisterDomainRequest) *types.RegisterDoma
 		EmitMetric:                             common.BoolPtr(true),
 		Clusters:                               ToClusterReplicationConfigurationArray(t.Clusters),
 		ActiveClusterName:                      t.ActiveClusterName,
+		ActiveClustersByRegion:                 t.ActiveClustersByRegion,
 		Data:                                   t.Data,
 		SecurityToken:                          t.SecurityToken,
 		IsGlobalDomain:                         t.IsGlobalDomain,
@@ -4258,6 +4262,7 @@ const (
 	DomainUpdateVisibilityArchivalStatusField = "visibility_archival_status"
 	DomainUpdateVisibilityArchivalURIField    = "visibility_archival_uri"
 	DomainUpdateActiveClusterNameField        = "active_cluster_name"
+	DomainUpdateActiveClustersField           = "active_clusters"
 	DomainUpdateClustersField                 = "clusters"
 	DomainUpdateDeleteBadBinaryField          = "delete_bad_binary"
 	DomainUpdateFailoverTimeoutField          = "failover_timeout"
@@ -4313,6 +4318,10 @@ func FromUpdateDomainRequest(t *types.UpdateDomainRequest) *apiv1.UpdateDomainRe
 	if t.ActiveClusterName != nil {
 		request.ActiveClusterName = *t.ActiveClusterName
 		fields = append(fields, DomainUpdateActiveClusterNameField)
+	}
+	if t.ActiveClusters != nil {
+		request.ActiveClusters = FromActiveClusters(t.ActiveClusters)
+		fields = append(fields, DomainUpdateActiveClustersField)
 	}
 	if t.Clusters != nil {
 		request.Clusters = FromClusterReplicationConfigurationArray(t.Clusters)
@@ -4372,6 +4381,9 @@ func ToUpdateDomainRequest(t *apiv1.UpdateDomainRequest) *types.UpdateDomainRequ
 	if fs.isSet(DomainUpdateActiveClusterNameField) {
 		request.ActiveClusterName = common.StringPtr(t.ActiveClusterName)
 	}
+	if fs.isSet(DomainUpdateActiveClustersField) {
+		request.ActiveClusters = ToActiveClusters(t.ActiveClusters)
+	}
 	if fs.isSet(DomainUpdateClustersField) {
 		request.Clusters = ToClusterReplicationConfigurationArray(t.Clusters)
 	}
@@ -4414,6 +4426,7 @@ func FromUpdateDomainResponse(t *types.UpdateDomainResponse) *apiv1.UpdateDomain
 	if repl := t.ReplicationConfiguration; repl != nil {
 		domain.ActiveClusterName = repl.ActiveClusterName
 		domain.Clusters = FromClusterReplicationConfigurationArray(repl.Clusters)
+		domain.ActiveClusters = FromActiveClusters(repl.ActiveClusters)
 	}
 	return &apiv1.UpdateDomainResponse{
 		Domain: domain,
@@ -4447,6 +4460,7 @@ func ToUpdateDomainResponse(t *apiv1.UpdateDomainResponse) *types.UpdateDomainRe
 		ReplicationConfiguration: &types.DomainReplicationConfiguration{
 			ActiveClusterName: t.Domain.ActiveClusterName,
 			Clusters:          ToClusterReplicationConfigurationArray(t.Domain.Clusters),
+			ActiveClusters:    ToActiveClusters(t.Domain.ActiveClusters),
 		},
 		FailoverVersion: t.Domain.FailoverVersion,
 		IsGlobalDomain:  t.Domain.IsGlobalDomain,
@@ -5393,6 +5407,42 @@ func ToClusterReplicationConfigurationArray(t []*apiv1.ClusterReplicationConfigu
 		v[i] = ToClusterReplicationConfiguration(t[i])
 	}
 	return v
+}
+
+func FromActiveClusters(t *types.ActiveClusters) *apiv1.ActiveClusters {
+	if t == nil {
+		return nil
+	}
+
+	regionToCluster := make(map[string]*apiv1.ActiveClusterInfo)
+	for region, cluster := range t.ActiveClustersByRegion {
+		regionToCluster[region] = &apiv1.ActiveClusterInfo{
+			ActiveClusterName: cluster.ActiveClusterName,
+			FailoverVersion:   cluster.FailoverVersion,
+		}
+	}
+
+	return &apiv1.ActiveClusters{
+		RegionToCluster: regionToCluster,
+	}
+}
+
+func ToActiveClusters(t *apiv1.ActiveClusters) *types.ActiveClusters {
+	if t == nil {
+		return nil
+	}
+
+	activeClustersByRegion := make(map[string]types.ActiveClusterInfo)
+	for region, cluster := range t.RegionToCluster {
+		activeClustersByRegion[region] = types.ActiveClusterInfo{
+			ActiveClusterName: cluster.ActiveClusterName,
+			FailoverVersion:   cluster.FailoverVersion,
+		}
+	}
+
+	return &types.ActiveClusters{
+		ActiveClustersByRegion: activeClustersByRegion,
+	}
 }
 
 func FromActivityLocalDispatchInfoMap(t map[string]*types.ActivityLocalDispatchInfo) map[string]*apiv1.ActivityLocalDispatchInfo {
