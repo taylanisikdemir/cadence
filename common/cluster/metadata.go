@@ -163,6 +163,11 @@ func (m Metadata) GetCurrentRegion() string {
 	return m.currentRegion
 }
 
+// GetAllRegionInfo return all region info
+func (m Metadata) GetAllRegionInfo() map[string]config.RegionInformation {
+	return m.regions
+}
+
 // GetAllClusterInfo return all cluster info
 func (m Metadata) GetAllClusterInfo() map[string]config.ClusterInformation {
 	return m.allClusters

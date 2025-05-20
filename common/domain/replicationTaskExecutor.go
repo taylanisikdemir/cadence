@@ -135,6 +135,7 @@ func (h *domainReplicationTaskExecutorImpl) handleDomainCreationReplicationTask(
 		ReplicationConfig: &persistence.DomainReplicationConfig{
 			ActiveClusterName: task.ReplicationConfig.GetActiveClusterName(),
 			Clusters:          h.convertClusterReplicationConfigFromThrift(task.ReplicationConfig.Clusters),
+			ActiveClusters:    task.ReplicationConfig.GetActiveClusters(),
 		},
 		IsGlobalDomain:  true, // local domain will not be replicated
 		ConfigVersion:   task.GetConfigVersion(),

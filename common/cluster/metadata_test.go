@@ -1041,9 +1041,20 @@ func TestGetters(t *testing.T) {
 	assert.Equal(t, "cluster0", m.GetCurrentClusterName())
 	assert.Equal(t, "us-west", m.GetCurrentRegion())
 
+	// do existence checks
 	assert.Equal(t, []string{"cluster0", "cluster1", "cluster2"}, keysOfClusterInfoMap(m.GetAllClusterInfo()))
 	assert.Equal(t, []string{"cluster0", "cluster1"}, keysOfClusterInfoMap(m.GetEnabledClusterInfo()))
 	assert.Equal(t, []string{"cluster1"}, keysOfClusterInfoMap(m.GetRemoteClusterInfo()))
+	assert.Equal(t, []string{"us-east", "us-west"}, keysOfRegionInfoMap(m.GetAllRegionInfo()))
+}
+
+func keysOfRegionInfoMap(m map[string]config.RegionInformation) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 func keysOfClusterInfoMap(m map[string]config.ClusterInformation) []string {

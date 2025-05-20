@@ -322,6 +322,73 @@ func TestRegisterDomain(t *testing.T) {
 			wantErr:     true,
 			expectedErr: &types.BadRequestError{Message: "Invalid local domain active cluster"},
 		},
+		{
+			name: "active-active domain with an invalid region in request",
+			request: &types.RegisterDomainRequest{
+				Name:           "active-active-domain",
+				IsGlobalDomain: true,
+				ActiveClustersByRegion: map[string]string{
+					cluster.TestRegion1: cluster.TestCurrentClusterName,
+					"invalid-region":    cluster.TestAlternativeClusterName,
+				},
+				Clusters: []*types.ClusterReplicationConfiguration{
+					{ClusterName: cluster.TestCurrentClusterName},
+					{ClusterName: cluster.TestAlternativeClusterName},
+				},
+				WorkflowExecutionRetentionPeriodInDays: 3,
+			},
+			isPrimaryCluster: true,
+			mockSetup: func(mockDomainMgr *persistence.MockDomainManager, mockReplicator *MockReplicator, request *types.RegisterDomainRequest) {
+				mockDomainMgr.EXPECT().GetDomain(gomock.Any(), &persistence.GetDomainRequest{Name: request.Name}).Return(nil, &types.EntityNotExistsError{})
+			},
+			wantErr:     true,
+			expectedErr: &types.BadRequestError{},
+		},
+		{
+			name: "active-active domain with an invalid cluster in request",
+			request: &types.RegisterDomainRequest{
+				Name:           "active-active-domain",
+				IsGlobalDomain: true,
+				ActiveClustersByRegion: map[string]string{
+					cluster.TestRegion1: cluster.TestCurrentClusterName,
+					cluster.TestRegion2: "invalid-cluster",
+				},
+				Clusters: []*types.ClusterReplicationConfiguration{
+					{ClusterName: cluster.TestCurrentClusterName},
+					{ClusterName: cluster.TestAlternativeClusterName},
+				},
+				WorkflowExecutionRetentionPeriodInDays: 3,
+			},
+			isPrimaryCluster: true,
+			mockSetup: func(mockDomainMgr *persistence.MockDomainManager, mockReplicator *MockReplicator, request *types.RegisterDomainRequest) {
+				mockDomainMgr.EXPECT().GetDomain(gomock.Any(), &persistence.GetDomainRequest{Name: request.Name}).Return(nil, &types.EntityNotExistsError{})
+			},
+			wantErr:     true,
+			expectedErr: &types.BadRequestError{},
+		},
+		{
+			name: "active-active domain successfully registered",
+			request: &types.RegisterDomainRequest{
+				Name:           "active-active-domain",
+				IsGlobalDomain: true,
+				ActiveClustersByRegion: map[string]string{
+					cluster.TestRegion1: cluster.TestCurrentClusterName,
+					cluster.TestRegion2: cluster.TestAlternativeClusterName,
+				},
+				Clusters: []*types.ClusterReplicationConfiguration{
+					{ClusterName: cluster.TestCurrentClusterName},
+					{ClusterName: cluster.TestAlternativeClusterName},
+				},
+				WorkflowExecutionRetentionPeriodInDays: 3,
+			},
+			isPrimaryCluster: true,
+			mockSetup: func(mockDomainMgr *persistence.MockDomainManager, mockReplicator *MockReplicator, request *types.RegisterDomainRequest) {
+				mockDomainMgr.EXPECT().GetDomain(gomock.Any(), &persistence.GetDomainRequest{Name: request.Name}).Return(nil, &types.EntityNotExistsError{})
+				mockDomainMgr.EXPECT().CreateDomain(gomock.Any(), gomock.Any()).Return(&persistence.CreateDomainResponse{ID: "test-domain-id"}, nil)
+				mockReplicator.EXPECT().HandleTransmissionTask(gomock.Any(), types.DomainOperationCreate, gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any(), commonconstants.InitialPreviousFailoverVersion, true).Return(nil)
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tc := range tests {

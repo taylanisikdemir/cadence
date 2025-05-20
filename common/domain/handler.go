@@ -252,9 +252,15 @@ func (d *handlerImpl) RegisterDomain(
 		VisibilityArchivalURI:    nextVisibilityArchivalState.URI,
 		BadBinaries:              types.BadBinaries{Binaries: map[string]*types.BadBinaryInfo{}},
 	}
+
+	activeClusters, err := d.activeClustersFromRegisterRequest(registerRequest)
+	if err != nil {
+		return err
+	}
 	replicationConfig := &persistence.DomainReplicationConfig{
 		ActiveClusterName: activeClusterName,
 		Clusters:          clusters,
+		ActiveClusters:    activeClusters,
 	}
 	isGlobalDomain := registerRequest.GetIsGlobalDomain()
 
@@ -1296,6 +1302,40 @@ func (d *handlerImpl) validateDomainReplicationConfigForUpdateDomain(
 	}
 
 	return nil
+}
+
+func (d *handlerImpl) activeClustersFromRegisterRequest(registerRequest *types.RegisterDomainRequest) (*types.ActiveClusters, error) {
+	if !registerRequest.GetIsGlobalDomain() || registerRequest.ActiveClustersByRegion == nil {
+		// local or active-passive domain
+		return nil, nil
+	}
+
+	// Initialize ActiveClustersByRegion with given cluster names and their initial failover versions
+	activeClustersByRegion := make(map[string]types.ActiveClusterInfo, len(registerRequest.ActiveClustersByRegion))
+	clusters := d.clusterMetadata.GetAllClusterInfo()
+	regions := d.clusterMetadata.GetAllRegionInfo()
+	for region, cluster := range registerRequest.ActiveClustersByRegion {
+		if _, ok := regions[region]; !ok {
+			return nil, &types.BadRequestError{
+				Message: fmt.Sprintf("Region %v not found. Domain cannot be registered in this region.", region),
+			}
+		}
+
+		clusterInfo, ok := clusters[cluster]
+		if !ok {
+			return nil, &types.BadRequestError{
+				Message: fmt.Sprintf("Cluster %v not found. Domain cannot be registered in this cluster.", cluster),
+			}
+		}
+
+		activeClustersByRegion[region] = types.ActiveClusterInfo{
+			ActiveClusterName: cluster,
+			FailoverVersion:   clusterInfo.InitialFailoverVersion,
+		}
+	}
+	return &types.ActiveClusters{
+		ActiveClustersByRegion: activeClustersByRegion,
+	}, nil
 }
 
 func getDomainStatus(info *persistence.DomainInfo) *types.DomainStatus {
