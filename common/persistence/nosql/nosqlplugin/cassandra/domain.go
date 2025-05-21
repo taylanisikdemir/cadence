@@ -92,6 +92,8 @@ func (db *cdb) InsertDomain(ctx context.Context, row *nosqlplugin.DomainRow) err
 		asyncWFConfigEncoding,
 		row.ReplicationConfig.ActiveClusterName,
 		persistence.SerializeClusterConfigs(row.ReplicationConfig.Clusters),
+		row.ReplicationConfig.ActiveClusters,
+		row.ReplicationConfig.ActiveClustersEncoding,
 		row.IsGlobalDomain,
 		row.ConfigVersion,
 		row.FailoverVersion,
@@ -172,6 +174,7 @@ func (db *cdb) UpdateDomain(ctx context.Context, row *nosqlplugin.DomainRow) err
 
 	isolationGroupData, isolationGroupEncoding := getIsolationGroupFields(row)
 	asyncWFConfigData, asyncWFConfigEncoding := getAsyncWFConfigFields(row)
+	activeClustersData, activeClustersEncoding := getActiveClustersFields(row)
 
 	batch.Query(templateUpdateDomainByNameQueryWithinBatchV2,
 		row.Info.ID,
@@ -196,6 +199,8 @@ func (db *cdb) UpdateDomain(ctx context.Context, row *nosqlplugin.DomainRow) err
 		asyncWFConfigEncoding,
 		row.ReplicationConfig.ActiveClusterName,
 		persistence.SerializeClusterConfigs(row.ReplicationConfig.Clusters),
+		activeClustersData,
+		activeClustersEncoding,
 		row.ConfigVersion,
 		row.FailoverVersion,
 		row.FailoverNotificationVersion,
@@ -269,6 +274,8 @@ func (db *cdb) SelectDomain(
 	var isolationGroupEncoding string
 	var asyncWFConfigData []byte
 	var asyncWFConfigEncoding string
+	var activeClustersData []byte
+	var activeClustersEncoding string
 
 	query = db.session.Query(templateGetDomainByNameQueryV2, constDomainPartition, domainName).WithContext(ctx)
 	err = query.Scan(
@@ -290,6 +297,8 @@ func (db *cdb) SelectDomain(
 		&badBinariesDataEncoding,
 		&replicationConfig.ActiveClusterName,
 		&replicationClusters,
+		&activeClustersData,
+		&activeClustersEncoding,
 		&isolationGroupData,
 		&isolationGroupEncoding,
 		&asyncWFConfigData,
@@ -313,7 +322,7 @@ func (db *cdb) SelectDomain(
 	config.BadBinaries = persistence.NewDataBlob(badBinariesData, constants.EncodingType(badBinariesDataEncoding))
 	config.Retention = common.DaysToDuration(retentionDays)
 	replicationConfig.Clusters = persistence.DeserializeClusterConfigs(replicationClusters)
-
+	replicationConfig.ActiveClustersConfig = persistence.NewDataBlob(activeClustersData, constants.EncodingType(activeClustersEncoding))
 	dr := &nosqlplugin.DomainRow{
 		Info:                        info,
 		Config:                      config,
@@ -509,6 +518,16 @@ func getAsyncWFConfigFields(row *nosqlplugin.DomainRow) ([]byte, string) {
 	if row != nil && row.Config != nil && row.Config.AsyncWorkflowsConfig != nil {
 		d = row.Config.AsyncWorkflowsConfig.GetData()
 		e = row.Config.AsyncWorkflowsConfig.GetEncodingString()
+	}
+	return d, e
+}
+
+func getActiveClustersFields(row *nosqlplugin.DomainRow) ([]byte, string) {
+	var d []byte
+	var e string
+	if row != nil && row.ReplicationConfig != nil && row.ReplicationConfig.ActiveClustersConfig != nil {
+		d = row.ReplicationConfig.ActiveClustersConfig.GetData()
+		e = row.ReplicationConfig.ActiveClustersConfig.GetEncodingString()
 	}
 	return d, e
 }

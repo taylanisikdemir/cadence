@@ -257,10 +257,13 @@ func (d *handlerImpl) RegisterDomain(
 	if err != nil {
 		return err
 	}
+
+	// TODO: conver to datablob similar to async workflow config
+
 	replicationConfig := &persistence.DomainReplicationConfig{
-		ActiveClusterName: activeClusterName,
-		Clusters:          clusters,
-		ActiveClusters:    activeClusters,
+		ActiveClusterName:    activeClusterName,
+		Clusters:             clusters,
+		ActiveClustersConfig: activeClustersConfig,
 	}
 	isGlobalDomain := registerRequest.GetIsGlobalDomain()
 
@@ -1236,7 +1239,10 @@ func (d *handlerImpl) updateReplicationConfig(
 		config.ActiveClusterName = *updateRequest.ActiveClusterName
 	}
 
-	// TODO(active-active): handle active-active case here which would be updateRequest.ActiveClusters != nil.
+	if updateRequest.ActiveClusters != nil {
+		config.ActiveClusters = updateRequest.ActiveClusters
+		config.ActiveClustersEncoding = constants.EncodingTypeThriftRW
+	}
 
 	return config, clusterUpdated, activeClusterUpdated, nil
 }
