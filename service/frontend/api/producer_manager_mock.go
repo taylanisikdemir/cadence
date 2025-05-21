@@ -12,9 +12,8 @@ package api
 import (
 	reflect "reflect"
 
-	gomock "go.uber.org/mock/gomock"
-
 	messaging "github.com/uber/cadence/common/messaging"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // MockProducerManager is a mock of ProducerManager interface.

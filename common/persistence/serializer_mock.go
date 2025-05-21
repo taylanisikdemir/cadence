@@ -12,11 +12,10 @@ package persistence
 import (
 	reflect "reflect"
 
-	gomock "go.uber.org/mock/gomock"
-
 	checksum "github.com/uber/cadence/common/checksum"
 	constants "github.com/uber/cadence/common/constants"
 	types "github.com/uber/cadence/common/types"
+	gomock "go.uber.org/mock/gomock"
 )
 
 // MockPayloadSerializer is a mock of PayloadSerializer interface.
@@ -41,6 +40,21 @@ func NewMockPayloadSerializer(ctrl *gomock.Controller) *MockPayloadSerializer {
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockPayloadSerializer) EXPECT() *MockPayloadSerializerMockRecorder {
 	return m.recorder
+}
+
+// DeserializeActiveClusters mocks base method.
+func (m *MockPayloadSerializer) DeserializeActiveClusters(data *DataBlob) (*types.ActiveClusters, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeserializeActiveClusters", data)
+	ret0, _ := ret[0].(*types.ActiveClusters)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// DeserializeActiveClusters indicates an expected call of DeserializeActiveClusters.
+func (mr *MockPayloadSerializerMockRecorder) DeserializeActiveClusters(data any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeserializeActiveClusters", reflect.TypeOf((*MockPayloadSerializer)(nil).DeserializeActiveClusters), data)
 }
 
 // DeserializeAsyncWorkflowsConfig mocks base method.
@@ -221,6 +235,21 @@ func (m *MockPayloadSerializer) DeserializeVisibilityMemo(data *DataBlob) (*type
 func (mr *MockPayloadSerializerMockRecorder) DeserializeVisibilityMemo(data any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeserializeVisibilityMemo", reflect.TypeOf((*MockPayloadSerializer)(nil).DeserializeVisibilityMemo), data)
+}
+
+// SerializeActiveClusters mocks base method.
+func (m *MockPayloadSerializer) SerializeActiveClusters(activeClusters *types.ActiveClusters, encodingType constants.EncodingType) (*DataBlob, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SerializeActiveClusters", activeClusters, encodingType)
+	ret0, _ := ret[0].(*DataBlob)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SerializeActiveClusters indicates an expected call of SerializeActiveClusters.
+func (mr *MockPayloadSerializerMockRecorder) SerializeActiveClusters(activeClusters, encodingType any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SerializeActiveClusters", reflect.TypeOf((*MockPayloadSerializer)(nil).SerializeActiveClusters), activeClusters, encodingType)
 }
 
 // SerializeAsyncWorkflowsConfig mocks base method.
