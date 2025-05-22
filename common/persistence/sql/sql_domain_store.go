@@ -121,7 +121,7 @@ func (m *sqlDomainStore) CreateDomain(
 
 	var activeClustersConfig []byte
 	var activeClustersConfigEncoding string
-	if request.ReplicationConfig.ActiveClustersConfig != nil {
+	if request.ReplicationConfig != nil && request.ReplicationConfig.ActiveClustersConfig != nil {
 		activeClustersConfig = request.ReplicationConfig.ActiveClustersConfig.GetData()
 		activeClustersConfigEncoding = request.ReplicationConfig.ActiveClustersConfig.GetEncodingString()
 	}
@@ -290,7 +290,7 @@ func (m *sqlDomainStore) domainRowToGetDomainResponse(row *sqlplugin.DomainRow) 
 			IsolationGroups:          isolationGroups,
 			AsyncWorkflowsConfig:     asyncWorkflowsCfg,
 		},
-		ReplicationConfig: &persistence.DomainReplicationConfig{
+		ReplicationConfig: &persistence.InternalDomainReplicationConfig{
 			ActiveClusterName:    cluster.GetOrUseDefaultActiveCluster(m.activeClusterName, domainInfo.GetActiveClusterName()),
 			Clusters:             cluster.GetOrUseDefaultClusters(m.activeClusterName, clusters),
 			ActiveClustersConfig: activeClustersConfig,

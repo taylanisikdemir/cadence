@@ -50,8 +50,8 @@ const (
 
 	templateDomainReplicationConfigType = `{` +
 		`active_cluster_name: ?, ` +
-		`clusters: ? ` +
-		`active_clusters_config: ?` +
+		`clusters: ?, ` +
+		`active_clusters_config: ?, ` +
 		`active_clusters_config_encoding: ?` +
 		`}`
 
@@ -132,6 +132,7 @@ const (
 		`config.isolation_groups, config.isolation_groups_encoding, ` +
 		`config.async_workflow_config, config.async_workflow_config_encoding, ` +
 		`replication_config.active_cluster_name, replication_config.clusters, ` +
+		`replication_config.active_clusters_config, replication_config.active_clusters_config_encoding, ` +
 		`is_global_domain, ` +
 		`config_version, ` +
 		`failover_version, ` +

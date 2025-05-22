@@ -12,8 +12,9 @@ package replication
 import (
 	reflect "reflect"
 
-	types "github.com/uber/cadence/common/types"
 	gomock "go.uber.org/mock/gomock"
+
+	types "github.com/uber/cadence/common/types"
 )
 
 // MockTaskExecutor is a mock of TaskExecutor interface.
