@@ -471,7 +471,7 @@ func (db *cdb) DeleteDomain(ctx context.Context, domainID *string, domainName *s
 	} else {
 		var id string
 		query := db.session.Query(templateGetDomainByNameQueryV2, constDomainPartition, *domainName).WithContext(ctx)
-		err := query.Scan(&id, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+		err := query.Scan(&id, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, nil)
 		if err != nil {
 			if db.client.IsNotFoundError(err) {
 				return nil
