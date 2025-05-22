@@ -66,6 +66,7 @@ func (db *cdb) InsertDomain(ctx context.Context, row *nosqlplugin.DomainRow) err
 	}
 	isolationGroupData, isolationGroupEncoding := getIsolationGroupFields(row)
 	asyncWFConfigData, asyncWFConfigEncoding := getAsyncWFConfigFields(row)
+	activeClustersData, activeClustersEncoding := getActiveClustersFields(row)
 
 	batch.Query(templateCreateDomainByNameQueryWithinBatchV2,
 		constDomainPartition,
@@ -92,8 +93,8 @@ func (db *cdb) InsertDomain(ctx context.Context, row *nosqlplugin.DomainRow) err
 		asyncWFConfigEncoding,
 		row.ReplicationConfig.ActiveClusterName,
 		persistence.SerializeClusterConfigs(row.ReplicationConfig.Clusters),
-		row.ReplicationConfig.ActiveClusters,
-		row.ReplicationConfig.ActiveClustersEncoding,
+		activeClustersData,
+		activeClustersEncoding,
 		row.IsGlobalDomain,
 		row.ConfigVersion,
 		row.FailoverVersion,
@@ -254,7 +255,7 @@ func (db *cdb) SelectDomain(
 
 	info := &persistence.DomainInfo{}
 	config := &persistence.InternalDomainConfig{}
-	replicationConfig := &persistence.DomainReplicationConfig{}
+	replicationConfig := &persistence.InternalDomainReplicationConfig{}
 
 	// because of encoding/types, we can't directly read from config struct
 	var badBinariesData []byte
@@ -360,7 +361,7 @@ func (db *cdb) SelectAllDomains(
 	domain := &nosqlplugin.DomainRow{
 		Info:              &persistence.DomainInfo{},
 		Config:            &persistence.InternalDomainConfig{},
-		ReplicationConfig: &persistence.DomainReplicationConfig{},
+		ReplicationConfig: &persistence.InternalDomainReplicationConfig{},
 	}
 	var replicationClusters []map[string]interface{}
 	var badBinariesData []byte
@@ -372,6 +373,8 @@ func (db *cdb) SelectAllDomains(
 	var retentionDays int32
 	var failoverEndTime int64
 	var lastUpdateTime int64
+	var activeClustersData []byte
+	var activeClustersEncoding string
 	var rows []*nosqlplugin.DomainRow
 	for iter.Scan(
 		&name,
@@ -397,6 +400,8 @@ func (db *cdb) SelectAllDomains(
 		&asyncWFConfigEncoding,
 		&domain.ReplicationConfig.ActiveClusterName,
 		&replicationClusters,
+		&activeClustersData,
+		&activeClustersEncoding,
 		&domain.IsGlobalDomain,
 		&domain.ConfigVersion,
 		&domain.FailoverVersion,
@@ -410,6 +415,7 @@ func (db *cdb) SelectAllDomains(
 			// do not include the metadata record
 			domain.Config.BadBinaries = persistence.NewDataBlob(badBinariesData, constants.EncodingType(badBinariesDataEncoding))
 			domain.ReplicationConfig.Clusters = persistence.DeserializeClusterConfigs(replicationClusters)
+			domain.ReplicationConfig.ActiveClustersConfig = persistence.NewDataBlob(activeClustersData, constants.EncodingType(activeClustersEncoding))
 			domain.Config.Retention = common.DaysToDuration(retentionDays)
 			domain.Config.IsolationGroups = persistence.NewDataBlob(isolationGroups, constants.EncodingType(isolationGroupsEncoding))
 			domain.Config.AsyncWorkflowsConfig = persistence.NewDataBlob(asyncWFConfigData, constants.EncodingType(asyncWFConfigEncoding))
@@ -429,10 +435,12 @@ func (db *cdb) SelectAllDomains(
 		failoverEndTime = 0
 		lastUpdateTime = 0
 		retentionDays = 0
+		activeClustersData = []byte("")
+		activeClustersEncoding = ""
 		domain = &nosqlplugin.DomainRow{
 			Info:              &persistence.DomainInfo{},
 			Config:            &persistence.InternalDomainConfig{},
-			ReplicationConfig: &persistence.DomainReplicationConfig{},
+			ReplicationConfig: &persistence.InternalDomainReplicationConfig{},
 		}
 	}
 

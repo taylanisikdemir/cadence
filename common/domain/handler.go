@@ -258,12 +258,10 @@ func (d *handlerImpl) RegisterDomain(
 		return err
 	}
 
-	// TODO: conver to datablob similar to async workflow config
-
 	replicationConfig := &persistence.DomainReplicationConfig{
-		ActiveClusterName:    activeClusterName,
-		Clusters:             clusters,
-		ActiveClustersConfig: activeClustersConfig,
+		ActiveClusterName: activeClusterName,
+		Clusters:          clusters,
+		ActiveClusters:    activeClusters,
 	}
 	isGlobalDomain := registerRequest.GetIsGlobalDomain()
 
