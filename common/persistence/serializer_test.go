@@ -225,6 +225,19 @@ func TestSerializers(t *testing.T) {
 				return serializer.DeserializeChecksum(data)
 			},
 		},
+		{
+			name: "active clusters",
+			payloads: map[string]any{
+				"nil":    (*types.ActiveClusters)(nil),
+				"normal": generateActiveClusters(),
+			},
+			serializeFn: func(payload any, encoding constants.EncodingType) (*DataBlob, error) {
+				return serializer.SerializeActiveClusters(payload.(*types.ActiveClusters), encoding)
+			},
+			deserializeFn: func(data *DataBlob) (any, error) {
+				return serializer.DeserializeActiveClusters(data)
+			},
+		},
 	}
 
 	// generate runnable test cases here so actual test body is not 3 level nested
@@ -494,5 +507,20 @@ func generateChecksum() checksum.Checksum {
 		Flavor:  checksum.FlavorIEEECRC32OverThriftBinary,
 		Version: 1,
 		Value:   []byte("test-checksum"),
+	}
+}
+
+func generateActiveClusters() *types.ActiveClusters {
+	return &types.ActiveClusters{
+		ActiveClustersByRegion: map[string]types.ActiveClusterInfo{
+			"region1": {
+				ActiveClusterName: "cluster1",
+				FailoverVersion:   2,
+			},
+			"region2": {
+				ActiveClusterName: "cluster2",
+				FailoverVersion:   3,
+			},
+		},
 	}
 }
