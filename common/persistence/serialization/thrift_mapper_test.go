@@ -147,6 +147,7 @@ func TestDomainInfo(t *testing.T) {
 	assert.Equal(t, expected.ActiveClusterName, actual.ActiveClusterName)
 	assert.Equal(t, expected.Clusters, actual.Clusters)
 	assert.Equal(t, expected.ActiveClustersConfig, actual.ActiveClustersConfig)
+	assert.Equal(t, expected.ActiveClustersConfigEncoding, actual.ActiveClustersConfigEncoding)
 	assert.Equal(t, expected.Data, actual.Data)
 	assert.Equal(t, expected.BadBinaries, actual.BadBinaries)
 	assert.Equal(t, expected.BadBinariesEncoding, actual.BadBinariesEncoding)

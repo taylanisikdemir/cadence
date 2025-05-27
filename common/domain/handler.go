@@ -1245,7 +1245,6 @@ func (d *handlerImpl) updateReplicationConfig(
 	}
 
 	if updateRequest.ActiveClusters != nil && updateRequest.ActiveClusters.ActiveClustersByRegion != nil {
-		activeClusterUpdated = true
 		existingActiveClusters := config.ActiveClusters
 		finalActiveClusters := make(map[string]types.ActiveClusterInfo)
 
