@@ -1026,6 +1026,7 @@ func (m *MetadataPersistenceSuiteV2) TestUpdateDomain() {
 	m.NoError(err7)
 
 	resp7, err7 := m.GetDomain(ctx, "", name)
+	m.T().Logf("resp7: %+v", resp7)
 	m.NoError(err7)
 	m.NotNil(resp7)
 	m.Equal(id, resp7.Info.ID)
