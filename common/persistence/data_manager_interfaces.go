@@ -1154,10 +1154,9 @@ type (
 
 		// ActiveClusterName is the name of the cluster that the domain is active in.
 		// Applicable for active-passive domains.
-		// If this is set, ActiveClusters is ignored.
 		ActiveClusterName string
 
-		// ActiveClustersConfig is only applicable for active-active domains.
+		// ActiveClusters is only applicable for active-active domains.
 		// If this is set, ActiveClusterName is ignored.
 		ActiveClusters *types.ActiveClusters
 	}
