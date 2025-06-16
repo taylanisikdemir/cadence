@@ -48,6 +48,7 @@ CREATE TYPE workflow_execution (
   completion_event                 blob,   -- Completion event used to communicate result to parent workflow execution
   completion_event_data_encoding   text, -- Protocol used for history serialization
   task_list                        text,
+  task_list_kind                   int, -- enum TaskListKind {Normal, Sticky, Ephemeral},
   workflow_type_name               text,
   workflow_timeout                 int,  -- Workflow ExecutionStartToCloseTimeoutSeconds
   decision_task_timeout            int,  -- decision start to close timeout
@@ -89,13 +90,16 @@ CREATE TYPE workflow_execution (
   last_first_event_id              bigint,
   next_event_id                    bigint,
   cron_schedule                    text,
+  cron_overlap_policy              int, -- enum CronOverlapPolicy {Skip, BufferOne}
   expiration_seconds               int,    -- retry expiration duration in seconds
   last_event_task_id               bigint,
   auto_reset_points                blob, -- the resetting points for auto-reset feature
   auto_reset_points_encoding       text, -- encoding for auto_reset_points_data
   search_attributes                map<text, blob>,
   memo                             map<text, blob>,
-  partition_config                 map<text, text>
+  partition_config                 map<text, text>,
+  active_cluster_selection_policy blob, -- active cluster selection policy applicable to active-active domains
+  active_cluster_selection_policy_encoding text, -- encoding for active_cluster_selection_policy
 );
 
 -- Replication information for each cluster
@@ -187,6 +191,7 @@ CREATE TYPE activity_info (
   timer_task_status         int,    -- Indicates whether timers are created for this activity.
   attempt                   int,    -- starting from 0 (for initial non-retry)
   task_list                 text,
+  task_list_kind            int, -- enum TaskListKind {Normal, Sticky, Ephemeral},
   started_identity          text,   -- last started poller's identity
   has_retry_policy          boolean,-- If there is a retry policy
   init_interval             int,    -- initial retry interval, in seconds
