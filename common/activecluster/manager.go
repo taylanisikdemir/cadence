@@ -376,5 +376,11 @@ func (m *managerImpl) getClusterSelectionPolicy(ctx context.Context, domainID, w
 		return nil, err
 	}
 
+	if plcy == nil {
+		return nil, &types.EntityNotExistsError{
+			Message: "active cluster selection policy not found",
+		}
+	}
+
 	return plcy, nil
 }

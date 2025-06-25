@@ -68,9 +68,9 @@ func TestReplicationSimulation(t *testing.T) {
 	}
 
 	simTypes.Logf(t, "Registering domains")
-	for domainName := range simCfg.Domains {
+	for domainName, domainCfg := range simCfg.Domains {
 		simTypes.Logf(t, "Domain: %s", domainName)
-		simCfg.MustRegisterDomain(t, domainName)
+		simCfg.MustRegisterDomain(t, domainName, domainCfg)
 	}
 
 	// wait for domain data to be replicated and workers to start.
@@ -215,8 +215,6 @@ func changeActiveClusters(
 ) error {
 	t.Helper()
 
-	simTypes.Logf(t, "Changing active clusters for domain %s to: %v", op.Domain, op.NewActiveClusters)
-
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	descResp, err := simCfg.MustGetFrontendClient(t, simCfg.PrimaryCluster).DescribeDomain(ctx, &types.DescribeDomainRequest{Name: common.StringPtr(op.Domain)})
@@ -226,7 +224,8 @@ func changeActiveClusters(
 
 	if !simCfg.IsActiveActiveDomain(op.Domain) {
 		fromCluster := descResp.ReplicationConfiguration.ActiveClusterName
-		toCluster := op.NewActiveClusters[0]
+		toCluster := op.NewActiveCluster
+		simTypes.Logf(t, "Changing active clusters for domain %s from %s to %s", op.Domain, fromCluster, toCluster)
 
 		ctx, cancel = context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
@@ -242,8 +241,31 @@ func changeActiveClusters(
 
 		simTypes.Logf(t, "Failed over from %s to %s", fromCluster, toCluster)
 	} else {
-		// TODO(active-active): implement this once domain API is changed to support ActiveClusters field
-		return fmt.Errorf("active-active domains are not supported yet")
+
+		ctx, cancel = context.WithTimeout(context.Background(), 2*time.Second)
+		defer cancel()
+
+		activeClustersByRegion := make(map[string]types.ActiveClusterInfo)
+		for region, cluster := range op.NewActiveClustersByRegion {
+			activeClustersByRegion[region] = types.ActiveClusterInfo{
+				ActiveClusterName: cluster,
+				FailoverVersion:   -1, // doesn't matter. API handler will override it
+			}
+		}
+		ac := &types.ActiveClusters{
+			ActiveClustersByRegion: activeClustersByRegion,
+		}
+		simTypes.Logf(t, "Changing active clusters by region for domain %s from %+v to %+v", op.Domain, descResp.ReplicationConfiguration.ActiveClusters, ac)
+		_, err = simCfg.MustGetFrontendClient(t, simCfg.PrimaryCluster).UpdateDomain(ctx,
+			&types.UpdateDomainRequest{
+				Name:           op.Domain,
+				ActiveClusters: ac,
+			})
+		if err != nil {
+			return fmt.Errorf("failed to update ActiveClusters, err: %w", err)
+		}
+
+		simTypes.Logf(t, "Failed over from %+v to %+v", descResp.ReplicationConfiguration.ActiveClusters, ac)
 	}
 	return nil
 }

@@ -66,10 +66,9 @@ type ReplicationSimulationConfig struct {
 type ReplicationDomainConfig struct {
 	Name string `yaml:"name"`
 
-	// ActiveClusters is the list of clusters that the test domain is active in
-	// If one cluster is specified, the test domain will be regular active-passive global domain.
-	// If multiple clusters are specified, the test domain will be active-active global domain.
-	ActiveClusters []string `yaml:"activeClusters"`
+	ActiveClusterName string `yaml:"activeClusterName"`
+
+	ActiveClustersByRegion map[string]string `yaml:"activeClustersByRegion"`
 }
 
 type Operation struct {
@@ -85,9 +84,10 @@ type Operation struct {
 
 	EventID int64 `yaml:"eventID"`
 
-	Domain            string   `yaml:"domain"`
-	NewActiveClusters []string `yaml:"newActiveClusters"`
-	FailoverTimeout   *int32   `yaml:"failoverTimeoutSec"`
+	Domain                    string            `yaml:"domain"`
+	NewActiveCluster          string            `yaml:"newActiveCluster"`
+	NewActiveClustersByRegion map[string]string `yaml:"newActiveClustersByRegion"`
+	FailoverTimeout           *int32            `yaml:"failoverTimeoutSec"`
 
 	Want Validation `yaml:"want"`
 }
@@ -164,11 +164,12 @@ func (s *ReplicationSimulationConfig) MustInitClientsFor(t *testing.T, clusterNa
 }
 
 func (s *ReplicationSimulationConfig) IsActiveActiveDomain(domainName string) bool {
-	return len(s.Domains[domainName].ActiveClusters) > 1
+	return len(s.Domains[domainName].ActiveClustersByRegion) > 0
 }
 
-func (s *ReplicationSimulationConfig) MustRegisterDomain(t *testing.T, domainName string) {
+func (s *ReplicationSimulationConfig) MustRegisterDomain(t *testing.T, domainName string, domainCfg ReplicationDomainConfig) {
 	Logf(t, "Registering domain: %s", domainName)
+
 	var clusters []*types.ClusterReplicationConfiguration
 	for name := range s.Clusters {
 		clusters = append(clusters, &types.ClusterReplicationConfiguration{
@@ -177,15 +178,22 @@ func (s *ReplicationSimulationConfig) MustRegisterDomain(t *testing.T, domainNam
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	err := s.MustGetFrontendClient(t, s.PrimaryCluster).RegisterDomain(ctx, &types.RegisterDomainRequest{
+	req := &types.RegisterDomainRequest{
 		Name:                                   domainName,
 		Clusters:                               clusters,
 		WorkflowExecutionRetentionPeriodInDays: 1,
 		IsGlobalDomain:                         true,
-		ActiveClusterName:                      s.PrimaryCluster,
-		// TODO: Once API is updated to support ActiveClusterNames, update this
-		// ActiveClusterNames:                      s.DomainActiveClusters,
-	})
+	}
+
+	if len(domainCfg.ActiveClusterName) > 0 {
+		req.ActiveClusterName = domainCfg.ActiveClusterName
+	} else if len(domainCfg.ActiveClustersByRegion) > 0 {
+		req.ActiveClustersByRegion = domainCfg.ActiveClustersByRegion
+	} else {
+		require.Fail(t, "activeClusterName or activeClustersByRegion is required but missing for domain %s", domainName)
+	}
+
+	err := s.MustGetFrontendClient(t, s.PrimaryCluster).RegisterDomain(ctx, req)
 
 	if err != nil {
 		if _, ok := err.(*shared.DomainAlreadyExistsError); !ok {

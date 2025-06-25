@@ -744,6 +744,29 @@ func TestLookupWorkflow(t *testing.T) {
 			},
 		},
 		{
+			name: "domain is active-active, activeness metadata is nil means region sticky",
+			activeClusterCfg: &types.ActiveClusters{
+				ActiveClustersByRegion: map[string]types.ActiveClusterInfo{
+					"us-west": {
+						ActiveClusterName: "cluster0",
+						FailoverVersion:   1,
+					},
+					"us-east": {
+						ActiveClusterName: "cluster1",
+						FailoverVersion:   3,
+					},
+				},
+			},
+			mockFn: func(em *persistence.MockExecutionManager) {
+				em.EXPECT().GetActiveClusterSelectionPolicy(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
+					Return(nil, nil)
+			},
+			expectedResult: &LookupResult{
+				ClusterName:     "cluster0",
+				FailoverVersion: 1,
+			},
+		},
+		{
 			name: "domain is active-active, activeness metadata shows region sticky",
 			activeClusterCfg: &types.ActiveClusters{
 				ActiveClustersByRegion: map[string]types.ActiveClusterInfo{

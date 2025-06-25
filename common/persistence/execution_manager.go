@@ -917,6 +917,11 @@ func (m *executionManagerImpl) GetActiveClusterSelectionPolicy(
 	if err != nil {
 		return nil, err
 	}
+	if blob == nil {
+		return nil, &types.EntityNotExistsError{
+			Message: "active cluster selection policy not found",
+		}
+	}
 	policy, err := m.serializer.DeserializeActiveClusterSelectionPolicy(blob)
 	if err != nil {
 		return nil, err
