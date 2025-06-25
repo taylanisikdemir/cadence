@@ -64,8 +64,6 @@ type ReplicationSimulationConfig struct {
 }
 
 type ReplicationDomainConfig struct {
-	Name string `yaml:"name"`
-
 	ActiveClusterName string `yaml:"activeClusterName"`
 
 	ActiveClustersByRegion map[string]string `yaml:"activeClustersByRegion"`
