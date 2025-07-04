@@ -236,39 +236,22 @@ func (s *dlqHandlerSuite) TestEmitDLQSizeMetricsLoop_FetchesAndEmitsMetricsPerio
 	emissionNumber := 2
 
 	s.messageHandler.status = common.DaemonStatusStarted
-	
-	// Use a buffered channel to track when calls are made
-	callsMade := make(chan struct{}, emissionNumber)
-	
-	// Set up mock with a callback to track calls
-	s.executionManager.On("GetReplicationDLQSize", mock.Anything, mock.Anything).Return(
-		&persistence.GetReplicationDLQSizeResponse{Size: 1}, nil).
-		Run(func(args mock.Arguments) {
-			// Signal that a call was made
-			select {
-			case callsMade <- struct{}{}:
-			default:
-			}
-		}).Times(emissionNumber)
-	
+	s.executionManager.On("GetReplicationDLQSize", mock.Anything, mock.Anything).Return(&persistence.GetReplicationDLQSizeResponse{Size: 1}, nil).Times(emissionNumber)
 	mockTimeSource := clock.NewMockedTimeSource()
 	s.messageHandler.timeSource = mockTimeSource
 
 	go s.messageHandler.emitDLQSizeMetricsLoop()
 
-	// Process the expected number of emissions
 	for i := 0; i < emissionNumber; i++ {
-		// Wait for the timer to be set
 		mockTimeSource.BlockUntil(1)
 
-		// Advance time to trigger the emission
+		// Advance time to trigger the next emission
 		mockTimeSource.Advance(dlqMetricsEmitTimerInterval + time.Duration(int64(float64(dlqMetricsEmitTimerInterval)*(1+dlqMetricsEmitTimerCoefficient))))
 		
-		// Wait for the mock call to be made
-		<-callsMade
+		// Give the timer event time to be processed
+		time.Sleep(20 * time.Millisecond)
 	}
 
-	// Now it's safe to stop the handler
 	s.messageHandler.Stop()
 
 	s.Equal(common.DaemonStatusStopped, s.messageHandler.status)
