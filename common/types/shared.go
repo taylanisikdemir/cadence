@@ -2101,6 +2101,13 @@ type ActiveClusters struct {
 	ActiveClustersByRegion map[string]ActiveClusterInfo `json:"activeClustersByRegion,omitempty"`
 }
 
+func (v *ActiveClusters) GetActiveClustersByRegion() (o map[string]ActiveClusterInfo) {
+	if v != nil && v.ActiveClustersByRegion != nil {
+		return v.ActiveClustersByRegion
+	}
+	return
+}
+
 type ActiveClusterInfo struct {
 	ActiveClusterName string `json:"activeClusterName,omitempty"`
 	FailoverVersion   int64  `json:"failoverVersion,omitempty"`

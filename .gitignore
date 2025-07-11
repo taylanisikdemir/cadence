@@ -31,6 +31,7 @@ replication-simulator-output/
 worker*.log
 **/Dockerfile.local*
 **/Dockerfile.light*
+dockerize
 *.crt
 
 # Executables produced by cadence repo

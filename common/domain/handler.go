@@ -258,6 +258,11 @@ func (d *handlerImpl) RegisterDomain(
 		return err
 	}
 
+	if activeClusters != nil {
+		// active-active domain, activeClusterName is not used
+		activeClusterName = ""
+	}
+
 	replicationConfig := &persistence.DomainReplicationConfig{
 		ActiveClusterName: activeClusterName,
 		Clusters:          clusters,
@@ -283,7 +288,8 @@ func (d *handlerImpl) RegisterDomain(
 	}
 
 	failoverVersion := constants.EmptyVersion
-	if registerRequest.GetIsGlobalDomain() {
+	if registerRequest.GetIsGlobalDomain() && !replicationConfig.IsActiveActive() {
+		// assign failover version for active-passive domain
 		failoverVersion = d.clusterMetadata.GetNextFailoverVersion(activeClusterName, 0, registerRequest.Name)
 	}
 
@@ -475,6 +481,9 @@ func (d *handlerImpl) UpdateDomain(
 		return nil, err
 	}
 
+	// TODO: remove log before merge
+	d.logger.Debugf("domain handler. replication config before update: %+v", replicationConfig)
+
 	// Update replication config
 	replicationConfig, replicationConfigChanged, activeClusterChanged, err := d.updateReplicationConfig(
 		getResponse.Info.Name,
@@ -484,6 +493,9 @@ func (d *handlerImpl) UpdateDomain(
 	if err != nil {
 		return nil, err
 	}
+
+	// TODO: remove log before merge
+	d.logger.Debugf("domain handler. replication config after update: %+v", replicationConfig)
 
 	// Handle graceful failover request
 	if updateRequest.FailoverTimeoutInSeconds != nil {
@@ -567,6 +579,10 @@ func (d *handlerImpl) UpdateDomain(
 			lastUpdatedTime,
 			notificationVersion,
 		)
+
+		// TODO: remove log before merge
+		d.logger.Debugf("domain handler. update request has active cluster name: %v", updateRequest.ActiveClusterName)
+		d.logger.Debugf("domain handler. update req ReplicationConfig: %+v", updateReq.ReplicationConfig)
 
 		err = d.domainManager.UpdateDomain(ctx, &updateReq)
 		if err != nil {
