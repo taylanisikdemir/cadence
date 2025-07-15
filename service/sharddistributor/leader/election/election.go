@@ -116,7 +116,7 @@ func (e *elector) Run(ctx context.Context) <-chan bool {
 			if err := e.runElection(runCtx, leaderCh); err != nil {
 				// Check if parent context is already canceled
 				if runCtx.Err() != nil {
-					e.logger.Info("Context canceled, stopping election loop", tag.Error(runCtx.Err()))
+					// Context is canceled, exit immediately without logging
 					return
 				}
 
@@ -143,6 +143,11 @@ func (e *elector) Run(ctx context.Context) <-chan bool {
 
 // runElection runs a single election attempt
 func (e *elector) runElection(ctx context.Context, leaderCh chan<- bool) (err error) {
+	// Check if context is already canceled before proceeding
+	if ctx.Err() != nil {
+		return fmt.Errorf("context cancelled before election: %w", ctx.Err())
+	}
+
 	// Add random delay before campaigning to spread load across instances
 	delay := time.Duration(rand.Intn(int(e.cfg.MaxRandomDelay)))
 
