@@ -112,10 +112,16 @@ type (
 
 	// FailoverEvent is the failover information to be stored for each failover event in domain data
 	FailoverEvent struct {
-		EventTime    time.Time `json:"eventTime"`
-		FromCluster  string    `json:"fromCluster,omitempty"`
-		ToCluster    string    `json:"toCluster,omitempty"`
-		FailoverType string    `json:"failoverType,omitempty"`
+		EventTime time.Time `json:"eventTime"`
+
+		// active-passive domain failover
+		FromCluster  string `json:"fromCluster,omitempty"`
+		ToCluster    string `json:"toCluster,omitempty"`
+		FailoverType string `json:"failoverType,omitempty"`
+
+		// active-active domain failover
+		FromActiveClusters types.ActiveClusters `json:"fromActiveClusters,omitempty"`
+		ToActiveClusters   types.ActiveClusters `json:"toActiveClusters,omitempty"`
 	}
 
 	// FailoverHistory is the history of failovers for a domain limited by the FailoverHistoryMaxSize config
@@ -426,12 +432,14 @@ func (d *handlerImpl) UpdateDomain(
 	info := getResponse.Info
 	config := getResponse.Config
 	replicationConfig := getResponse.ReplicationConfig
+	wasActiveActive := replicationConfig.IsActiveActive()
 	configVersion := getResponse.ConfigVersion
 	failoverVersion := getResponse.FailoverVersion
 	failoverNotificationVersion := getResponse.FailoverNotificationVersion
 	isGlobalDomain := getResponse.IsGlobalDomain
 	gracefulFailoverEndTime := getResponse.FailoverEndTime
 	currentActiveCluster := replicationConfig.ActiveClusterName
+	currentActiveClusters := replicationConfig.ActiveClusters
 	previousFailoverVersion := getResponse.PreviousFailoverVersion
 	lastUpdatedTime := time.Unix(0, getResponse.LastUpdatedTime)
 
@@ -486,6 +494,8 @@ func (d *handlerImpl) UpdateDomain(
 		getResponse.Info.Name,
 		replicationConfig,
 		updateRequest,
+		wasActiveActive,
+		failoverVersion,
 	)
 	if err != nil {
 		return nil, err
@@ -544,14 +554,73 @@ func (d *handlerImpl) UpdateDomain(
 				previousFailoverVersion = constants.InitialPreviousFailoverVersion
 			}
 
-			if !replicationConfig.IsActiveActive() {
+			// Cases:
+			// 1. active-passive domain's ActiveClusterName is changed
+			// 2. active-active domain's ActiveClusters is changed
+			// 3. active-passive domain is being migrated to active-active
+			isActiveActive := replicationConfig.IsActiveActive()
+
+			if !wasActiveActive && !isActiveActive { // case 1.
 				failoverVersion = d.clusterMetadata.GetNextFailoverVersion(
 					replicationConfig.ActiveClusterName,
 					failoverVersion,
 					updateRequest.Name,
 				)
 
-				err = updateFailoverHistory(info, d.config, now, currentActiveCluster, *updateRequest.ActiveClusterName, failoverType)
+				d.logger.Debug("active-passive domain failover",
+					tag.WorkflowDomainName(info.Name),
+					tag.Dynamic("failover-version", failoverVersion),
+					tag.Dynamic("failover-type", failoverType),
+				)
+
+				err = updateFailoverHistory(info, d.config, NewFailoverEvent(
+					now,
+					failoverType,
+					&currentActiveCluster,
+					updateRequest.ActiveClusterName,
+					nil,
+					nil,
+				))
+				if err != nil {
+					d.logger.Warn("failed to update failover history", tag.Error(err))
+				}
+			}
+
+			if wasActiveActive && isActiveActive { // case 2.
+				d.logger.Debug("active-active domain failover",
+					tag.WorkflowDomainName(info.Name),
+					tag.Dynamic("failover-version", failoverVersion),
+					tag.Dynamic("failover-type", failoverType),
+				)
+
+				err = updateFailoverHistory(info, d.config, NewFailoverEvent(
+					now,
+					failoverType,
+					&currentActiveCluster,
+					updateRequest.ActiveClusterName,
+					currentActiveClusters,
+					replicationConfig.ActiveClusters,
+				))
+				if err != nil {
+					d.logger.Warn("failed to update failover history", tag.Error(err))
+				}
+			}
+
+			if !wasActiveActive && isActiveActive { // case 3.
+				d.logger.Debug("active-passive domain is being migrated to active-active",
+					tag.WorkflowDomainName(info.Name),
+					tag.Dynamic("failover-version", failoverVersion),
+					tag.Dynamic("failover-type", failoverType),
+				)
+
+				err = updateFailoverHistory(info, d.config, NewFailoverEvent(
+					now,
+					failoverType,
+					&currentActiveCluster,
+					updateRequest.ActiveClusterName,
+					nil,
+					replicationConfig.ActiveClusters,
+				))
 				if err != nil {
 					d.logger.Warn("failed to update failover history", tag.Error(err))
 				}
@@ -559,6 +628,7 @@ func (d *handlerImpl) UpdateDomain(
 
 			failoverNotificationVersion = notificationVersion
 		}
+
 		lastUpdatedTime = now
 
 		updateReq := createUpdateRequest(
@@ -1223,6 +1293,8 @@ func (d *handlerImpl) updateReplicationConfig(
 	domainName string,
 	config *persistence.DomainReplicationConfig,
 	updateRequest *types.UpdateDomainRequest,
+	wasActiveActive bool,
+	failoverVersion int64,
 ) (*persistence.DomainReplicationConfig, bool, bool, error) {
 
 	clusterUpdated := false
@@ -1245,6 +1317,7 @@ func (d *handlerImpl) updateReplicationConfig(
 		config.Clusters = clustersNew
 	}
 
+	currentActiveCluster := config.ActiveClusterName
 	if updateRequest.ActiveClusterName != nil {
 		activeClusterUpdated = true
 		config.ActiveClusterName = *updateRequest.ActiveClusterName
@@ -1252,6 +1325,11 @@ func (d *handlerImpl) updateReplicationConfig(
 
 	if updateRequest.ActiveClusters != nil && updateRequest.ActiveClusters.ActiveClustersByRegion != nil {
 		existingActiveClusters := config.ActiveClusters
+		if existingActiveClusters == nil { // migration from active-passive to active-active
+			existingActiveClusters = &types.ActiveClusters{
+				ActiveClustersByRegion: make(map[string]types.ActiveClusterInfo),
+			}
+		}
 		finalActiveClusters := make(map[string]types.ActiveClusterInfo)
 
 		// first add the ones that are not touched
@@ -1268,6 +1346,13 @@ func (d *handlerImpl) updateReplicationConfig(
 				// a cluster is being activated on a region that didn't have any active cluster before
 				// initialize failover version to the initial failover version of the cluster
 				activeCluster.FailoverVersion = d.clusterMetadata.GetNextFailoverVersion(activeCluster.ActiveClusterName, 0, domainName)
+				if !wasActiveActive {
+					// for active-passive to active-active migration,
+					// we need to carry over failover version of current active cluster to corresponding map entry
+					if currentActiveCluster == activeCluster.ActiveClusterName {
+						activeCluster.FailoverVersion = failoverVersion
+					}
+				}
 				finalActiveClusters[region] = activeCluster
 				continue
 			}
@@ -1436,22 +1521,17 @@ func createUpdateRequest(
 func updateFailoverHistory(
 	info *persistence.DomainInfo,
 	config Config,
-	eventTime time.Time,
-	fromCluster string,
-	toCluster string,
-	failoverType constants.FailoverType,
+	failoverEvent FailoverEvent,
 ) error {
 	data := info.Data
 	if info.Data == nil {
 		data = make(map[string]string)
 	}
 
-	newFailoverEvent := FailoverEvent{EventTime: eventTime, FromCluster: fromCluster, ToCluster: toCluster, FailoverType: failoverType.String()}
-
 	var failoverHistory []FailoverEvent
 	_ = json.Unmarshal([]byte(data[constants.DomainDataKeyForFailoverHistory]), &failoverHistory)
 
-	failoverHistory = append([]FailoverEvent{newFailoverEvent}, failoverHistory...)
+	failoverHistory = append([]FailoverEvent{failoverEvent}, failoverHistory...)
 
 	// Truncate the history to the max size
 	failoverHistoryJSON, err := json.Marshal(failoverHistory[:min(config.FailoverHistoryMaxSize(info.Name), len(failoverHistory))])
@@ -1463,4 +1543,31 @@ func updateFailoverHistory(
 	info.Data = data
 
 	return nil
+}
+
+func NewFailoverEvent(
+	eventTime time.Time,
+	failoverType constants.FailoverType,
+	fromCluster *string,
+	toCluster *string,
+	fromActiveClusters *types.ActiveClusters,
+	toActiveClusters *types.ActiveClusters,
+) FailoverEvent {
+	res := FailoverEvent{
+		EventTime:    eventTime,
+		FailoverType: failoverType.String(),
+	}
+	if fromCluster != nil {
+		res.FromCluster = *fromCluster
+	}
+	if toCluster != nil {
+		res.ToCluster = *toCluster
+	}
+	if fromActiveClusters != nil {
+		res.FromActiveClusters = *fromActiveClusters
+	}
+	if toActiveClusters != nil {
+		res.ToActiveClusters = *toActiveClusters
+	}
+	return res
 }
