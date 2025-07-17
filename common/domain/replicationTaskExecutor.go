@@ -260,12 +260,16 @@ func (h *domainReplicationTaskExecutorImpl) handleDomainUpdateReplicationTask(ct
 			request.Config.BadBinaries = *task.Config.GetBadBinaries()
 		}
 		request.ReplicationConfig.Clusters = h.convertClusterReplicationConfigFromThrift(task.ReplicationConfig.Clusters)
-		request.ReplicationConfig.ActiveClusters = task.ReplicationConfig.GetActiveClusters()
 		request.ConfigVersion = task.GetConfigVersion()
 	}
+
+	// TODO: remove this log after testing
+	h.logger.Debugf("task.GetFailoverVersion(): %d, resp.FailoverVersion: %d", task.GetFailoverVersion(), resp.FailoverVersion)
+
 	if resp.FailoverVersion < task.GetFailoverVersion() {
 		recordUpdated = true
 		request.ReplicationConfig.ActiveClusterName = task.ReplicationConfig.GetActiveClusterName()
+		request.ReplicationConfig.ActiveClusters = task.ReplicationConfig.GetActiveClusters()
 		request.FailoverVersion = task.GetFailoverVersion()
 		request.FailoverNotificationVersion = notificationVersion
 		request.PreviousFailoverVersion = task.GetPreviousFailoverVersion()

@@ -1735,7 +1735,7 @@ func TestHandler_UpdateDomain(t *testing.T) {
 					},
 					PreviousFailoverVersion: -1, // this is not applicable to active-active domain
 					ConfigVersion:           domainResponse.ConfigVersion,
-					FailoverVersion:         cluster.TestCurrentClusterInitialFailoverVersion,
+					FailoverVersion:         cluster.TestCurrentClusterInitialFailoverVersion + cluster.TestFailoverVersionIncrement, // this is incremented to indicate there was a change in replication config
 					LastUpdatedTime:         timeSource.Now().UnixNano(),
 				}).Return(nil).Times(1)
 				domainReplicator.EXPECT().
@@ -1746,7 +1746,7 @@ func TestHandler_UpdateDomain(t *testing.T) {
 						domainResponse.Config,
 						domainResponse.ReplicationConfig,
 						domainResponse.ConfigVersion,
-						cluster.TestCurrentClusterInitialFailoverVersion,
+						cluster.TestCurrentClusterInitialFailoverVersion+cluster.TestFailoverVersionIncrement,
 						int64(-1), // previous failover version is not applicable to active-active domain
 						domainResponse.IsGlobalDomain,
 					).Return(nil).Times(1)
@@ -1797,7 +1797,7 @@ func TestHandler_UpdateDomain(t *testing.T) {
 				}})
 				return &types.UpdateDomainResponse{
 					IsGlobalDomain:  true,
-					FailoverVersion: cluster.TestCurrentClusterInitialFailoverVersion,
+					FailoverVersion: cluster.TestCurrentClusterInitialFailoverVersion + cluster.TestFailoverVersionIncrement,
 					DomainInfo: &types.DomainInfo{
 						Name:   constants.TestDomainName,
 						UUID:   constants.TestDomainID,
@@ -1890,7 +1890,7 @@ func TestHandler_UpdateDomain(t *testing.T) {
 							ActiveClustersByRegion: map[string]types.ActiveClusterInfo{
 								cluster.TestRegion1: {
 									ActiveClusterName: cluster.TestCurrentClusterName,
-									FailoverVersion:   cluster.TestCurrentClusterInitialFailoverVersion + 2*cluster.TestFailoverVersionIncrement,
+									FailoverVersion:   cluster.TestCurrentClusterInitialFailoverVersion + 3*cluster.TestFailoverVersionIncrement,
 								},
 								cluster.TestRegion2: {
 									ActiveClusterName: cluster.TestAlternativeClusterName,
@@ -1901,7 +1901,7 @@ func TestHandler_UpdateDomain(t *testing.T) {
 					},
 					PreviousFailoverVersion: -1, // this is not applicable to active-active domain
 					ConfigVersion:           domainResponse.ConfigVersion,
-					FailoverVersion:         cluster.TestCurrentClusterInitialFailoverVersion + 2*cluster.TestFailoverVersionIncrement, // left as is
+					FailoverVersion:         cluster.TestCurrentClusterInitialFailoverVersion + 3*cluster.TestFailoverVersionIncrement, // this is incremented to indicate there was a change in replication config
 					LastUpdatedTime:         timeSource.Now().UnixNano(),
 				}).Return(nil).Times(1)
 				domainReplicator.EXPECT().
@@ -1912,7 +1912,7 @@ func TestHandler_UpdateDomain(t *testing.T) {
 						domainResponse.Config,
 						domainResponse.ReplicationConfig,
 						domainResponse.ConfigVersion,
-						cluster.TestCurrentClusterInitialFailoverVersion+2*cluster.TestFailoverVersionIncrement,
+						cluster.TestCurrentClusterInitialFailoverVersion+3*cluster.TestFailoverVersionIncrement,
 						int64(-1), // previous failover version is not applicable to active-active domain
 						domainResponse.IsGlobalDomain,
 					).Return(nil).Times(1)
@@ -1941,7 +1941,7 @@ func TestHandler_UpdateDomain(t *testing.T) {
 						ActiveClustersByRegion: map[string]types.ActiveClusterInfo{
 							cluster.TestRegion1: {
 								ActiveClusterName: cluster.TestCurrentClusterName,
-								FailoverVersion:   cluster.TestCurrentClusterInitialFailoverVersion + 2*cluster.TestFailoverVersionIncrement,
+								FailoverVersion:   cluster.TestCurrentClusterInitialFailoverVersion + 3*cluster.TestFailoverVersionIncrement,
 							},
 							cluster.TestRegion2: {
 								ActiveClusterName: cluster.TestAlternativeClusterName,
@@ -1953,7 +1953,7 @@ func TestHandler_UpdateDomain(t *testing.T) {
 
 				return &types.UpdateDomainResponse{
 					IsGlobalDomain:  true,
-					FailoverVersion: cluster.TestCurrentClusterInitialFailoverVersion + 2*cluster.TestFailoverVersionIncrement,
+					FailoverVersion: cluster.TestCurrentClusterInitialFailoverVersion + 3*cluster.TestFailoverVersionIncrement,
 					DomainInfo: &types.DomainInfo{
 						Name:   constants.TestDomainName,
 						UUID:   constants.TestDomainID,
@@ -1979,7 +1979,7 @@ func TestHandler_UpdateDomain(t *testing.T) {
 							ActiveClustersByRegion: map[string]types.ActiveClusterInfo{
 								cluster.TestRegion1: {
 									ActiveClusterName: cluster.TestCurrentClusterName,
-									FailoverVersion:   cluster.TestCurrentClusterInitialFailoverVersion + 2*cluster.TestFailoverVersionIncrement,
+									FailoverVersion:   cluster.TestCurrentClusterInitialFailoverVersion + 3*cluster.TestFailoverVersionIncrement,
 								},
 								cluster.TestRegion2: {
 									ActiveClusterName: cluster.TestAlternativeClusterName,
@@ -2779,8 +2779,6 @@ func TestUpdateReplicationConfig(t *testing.T) {
 		name                     string
 		request                  *types.UpdateDomainRequest
 		currentReplicationConfig *persistence.DomainReplicationConfig
-		wasActiveActive          bool
-		failoverVersion          int64
 		updatedReplicationConfig *persistence.DomainReplicationConfig
 		clusterUpdated           bool
 		activeClusterUpdated     bool
@@ -2831,7 +2829,6 @@ func TestUpdateReplicationConfig(t *testing.T) {
 				},
 			},
 			currentReplicationConfig: activeActiveCfg(),
-			wasActiveActive:          true,
 			updatedReplicationConfig: activeActiveCfg(),
 			clusterUpdated:           false,
 			activeClusterUpdated:     false,
@@ -2850,7 +2847,6 @@ func TestUpdateReplicationConfig(t *testing.T) {
 				},
 			},
 			currentReplicationConfig: activeActiveCfg(),
-			wasActiveActive:          true,
 			updatedReplicationConfig: &persistence.DomainReplicationConfig{
 				Clusters: []*persistence.ClusterReplicationConfig{{ClusterName: cluster.TestCurrentClusterName}, {ClusterName: cluster.TestAlternativeClusterName}},
 				ActiveClusters: &types.ActiveClusters{
@@ -2883,7 +2879,6 @@ func TestUpdateReplicationConfig(t *testing.T) {
 				},
 			},
 			currentReplicationConfig: activeActiveCfg(),
-			wasActiveActive:          true,
 			updatedReplicationConfig: &persistence.DomainReplicationConfig{
 				Clusters: []*persistence.ClusterReplicationConfig{{ClusterName: cluster.TestCurrentClusterName}, {ClusterName: cluster.TestAlternativeClusterName}},
 				ActiveClusters: &types.ActiveClusters{
@@ -2914,7 +2909,6 @@ func TestUpdateReplicationConfig(t *testing.T) {
 				},
 			},
 			currentReplicationConfig: activeActiveCfg(),
-			wasActiveActive:          true,
 			updatedReplicationConfig: &persistence.DomainReplicationConfig{
 				Clusters: []*persistence.ClusterReplicationConfig{{ClusterName: cluster.TestCurrentClusterName}, {ClusterName: cluster.TestAlternativeClusterName}},
 				ActiveClusters: &types.ActiveClusters{
@@ -2937,42 +2931,6 @@ func TestUpdateReplicationConfig(t *testing.T) {
 			clusterUpdated:       false,
 			activeClusterUpdated: true,
 		},
-		{
-			name: "active-passive to active-active migration",
-			request: &types.UpdateDomainRequest{
-				ActiveClusters: &types.ActiveClusters{
-					ActiveClustersByRegion: map[string]types.ActiveClusterInfo{
-						cluster.TestRegion1: {
-							ActiveClusterName: cluster.TestCurrentClusterName,
-						},
-						cluster.TestRegion2: {
-							ActiveClusterName: cluster.TestAlternativeClusterName,
-						},
-					},
-				},
-			},
-			currentReplicationConfig: cfg(),
-			wasActiveActive:          false,
-			updatedReplicationConfig: &persistence.DomainReplicationConfig{
-				ActiveClusterName: cluster.TestCurrentClusterName,
-				Clusters:          []*persistence.ClusterReplicationConfig{{ClusterName: cluster.TestCurrentClusterName}, {ClusterName: cluster.TestAlternativeClusterName}},
-				ActiveClusters: &types.ActiveClusters{
-					ActiveClustersByRegion: map[string]types.ActiveClusterInfo{
-						cluster.TestRegion1: {
-							ActiveClusterName: cluster.TestCurrentClusterName,
-							FailoverVersion:   cluster.TestCurrentClusterInitialFailoverVersion + 5*cluster.TestFailoverVersionIncrement,
-						},
-						cluster.TestRegion2: {
-							ActiveClusterName: cluster.TestAlternativeClusterName,
-							FailoverVersion:   cluster.TestAlternativeClusterInitialFailoverVersion,
-						},
-					},
-				},
-			},
-			clusterUpdated:       false,
-			activeClusterUpdated: true,
-			failoverVersion:      cluster.TestCurrentClusterInitialFailoverVersion + 5*cluster.TestFailoverVersionIncrement,
-		},
 	}
 
 	for _, tc := range testCases {
@@ -2988,8 +2946,6 @@ func TestUpdateReplicationConfig(t *testing.T) {
 				constants.TestDomainName,
 				tc.currentReplicationConfig,
 				tc.request,
-				tc.wasActiveActive,
-				tc.failoverVersion,
 			)
 
 			assert.NoError(t, err)

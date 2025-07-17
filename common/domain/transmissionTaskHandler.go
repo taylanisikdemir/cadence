@@ -119,6 +119,9 @@ func (domainReplicator *domainReplicatorImpl) HandleTransmissionTask(
 		PreviousFailoverVersion: previousFailoverVersion,
 	}
 
+	// TODO: remove this log after testing
+	domainReplicator.logger.Debugf("publishing domain update message with active clusters %#v", task.ReplicationConfig.ActiveClusters)
+
 	return domainReplicator.replicationMessageSink.Publish(
 		ctx,
 		&types.ReplicationTask{

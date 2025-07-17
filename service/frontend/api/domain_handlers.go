@@ -121,6 +121,9 @@ func (wh *WorkflowHandler) UpdateDomain(
 		isGraceFailover,
 		updateRequest))
 
+	// TODO: remove this log after testing
+	logger.Debugf("updateRequest.ActiveClusters: %#v", updateRequest.ActiveClusters)
+
 	if isGraceFailover {
 		if err := wh.checkOngoingFailover(
 			ctx,
