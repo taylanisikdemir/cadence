@@ -17,17 +17,18 @@ domains:
 
 
 operations:
-  # start wf1 for active-passive domain and validate it runs in cluster0
+  # start wf1 for active-passive domain and validate it runs in cluster0 smoothly
+  # while the domain is migrating to active-active
   - op: start_workflow
     at: 0s
     workflowType: timer-activity-loop-workflow
     workflowID: wf1
     cluster: cluster0
     domain: test-domain
-    workflowExecutionStartToCloseTimeout: 60s
-    workflowDuration: 30s
+    workflowExecutionStartToCloseTimeout: 90s
+    workflowDuration: 60s
   - op: validate
-    at: 35s
+    at: 100s
     workflowID: wf1
     cluster: cluster0
     domain: test-domain
