@@ -640,7 +640,7 @@ func (d *handlerImpl) UpdateDomain(
 					now,
 					failoverType,
 					&currentActiveCluster,
-					updateRequest.ActiveClusterName,
+					nil,
 					currentActiveClusters,
 					replicationConfig.ActiveClusters,
 				))
