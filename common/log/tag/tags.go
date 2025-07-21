@@ -1084,6 +1084,10 @@ func AsyncWFQueueID(queueID string) Tag {
 	return newStringTag("async-wf-queue-id", queueID)
 }
 
+func AsyncWFRequestType(requestType string) Tag {
+	return newStringTag("async-wf-request-type", requestType)
+}
+
 func GlobalRatelimiterKey(globalKey string) Tag {
 	return newStringTag("global-ratelimit-key", globalKey)
 }
