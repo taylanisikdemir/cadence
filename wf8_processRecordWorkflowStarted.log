@@ -1,0 +1,45 @@
+{
+    "level": "debug",
+    "ts": "2025-08-05T19:50:26.092Z",
+    "msg": "StartTransaction calling UpdateCurrentVersion for domain test-domain-aa, wfID wf8, incomingTaskVersion -24, version 2,
+        stacktrace goroutine 2681 [running]:\nruntime/debug.Stack()\n\t/usr/local/go/src/runtime/debug/stack.go:26 +0x64\n
+            github.com/uber/cadence/service/history/execution.(*mutableStateBuilder).StartTransaction(0x4003c18308, {0x34674b0?, 0x400314b030?}, 0x400309d560, 0xffffffffffffffe8)
+                cadence/service/history/execution/mutable_state_builder.go:1439 +0x140\n
+                github.com/uber/cadence/service/history/execution.(*contextImpl).LoadWorkflowExecutionWithTaskVersion(0x40018afa20, {0x34674b0, 0x400314b030}, 0xffffffffffffffe8)
+                    cadence/service/history/execution/context.go:390 +0x5c8\n
+                    github.com/uber/cadence/service/history/execution.(*contextImpl).LoadWorkflowExecution(0x2765fc0?, {0x34674b0?, 0x400314b030?})
+                        \n\t/cadence/service/history/execution/context.go:428 +0x28\n
+                        github.com/uber/cadence/service/history/task.loadMutableState({0x34674b0, 0x400314b030}, {0x3499440, 0x40018afa20}, {0x348ede0, 0x4003189b60}, {0x347b830, 0x40040962a0}, {0x34803e8, 0x4002009da0}, ...)
+                            \n\t/cadence/service/history/task/task_util.go:223 +0x68\n
+                            github.com/uber/cadence/service/history/task.(*transferActiveTaskExecutor).processRecordWorkflowStartedOrUpsertHelper(0x4000e1fa90, {0x34674b0, 0x400314b030}, {0x348ede0, 0x4003189b60}, 0x1)
+                                \n\t/cadence/service/history/task/transfer_active_task_executor.go:943 +0x224\n
+                                github.com/uber/cadence/service/history/task.(*transferActiveTaskExecutor).processRecordWorkflowStarted(...)\n\t/
+                                    cadence/service/history/task/transfer_active_task_executor.go:911\n
+                                    github.com/uber/cadence/service/history/task.(*transferActiveTaskExecutor).Execute(0x4000e1fa90, {0x349cfb0, 0x4003862000})
+                                    \n\t/cadence/service/history/task/transfer_active_task_executor.go:154 +0x800\n
+                                    github.com/uber/cadence/service/history/task.(*taskImpl).Execute(0x4003862000)
+                                        \n\t/cadence/service/history/task/task.go:167 +0x22c\n
+                                        github.com/uber/cadence/common/task.(*parallelTaskProcessorImpl).executeTask.func2({0x3467130?, 0x509ae60?})
+                                            \n\t/cadence/common/task/parallel_task_processor.go:166 +0x30\n
+                                            github.com/uber/cadence/common/backoff.(*ThrottleRetry).Do(0x4002fcc700, {0x3467130, 0x509ae60}, 0x4005203e78)\n\t/
+                                            cadence/common/backoff/retry.go:186 +0x108\n
+                                            github.com/uber/cadence/common/task.(*parallelTaskProcessorImpl).executeTask(0x40004748c0, {0xffff6d6a6640, 0x4003862000}, 0x40009ff030)
+                                                \n\t/cadence/common/task/parallel_task_processor.go:186 +0x1d4\n
+                                                github.com/uber/cadence/common/task.(*parallelTaskProcessorImpl).taskWorker(0x40004748c0, 0x40009ff030)
+                                                    \n\t/cadence/common/task/parallel_task_processor.go:148 +0x6c\ncreated by github.com/uber/cadence/common/task.(*parallelTaskProcessorImpl).Start in goroutine 2034
+                                                        \n\t/cadence/common/task/parallel_task_processor.go:96 +0xc4\n",
+    "service": "cadence-history",
+    "shard-id": 0,
+    "address": "[::]:7934",
+    "component": "history-cache",
+    "wf-domain-id": "09ae9c46-e14e-4bd5-a677-889b360f53ad",
+    "wf-id": "wf8",
+    "wf-run-id": "4fd31c6e-e182-4380-9c43-52ae350ed6f7",
+    "logging-call-at": "mutable_state_builder.go:1438"
+}
+
+Check logs:
+- "Calling API %q on target cluster"
+    Make sure forwardingworks after failover
+- "ActiveClusterSelectionPolicy is " nil vs NOT nil
+    Make sure replicated cluster inserts policy as part of apply events
