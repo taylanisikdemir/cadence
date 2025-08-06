@@ -96,9 +96,11 @@ func (d *nosqlExecutionStore) prepareWorkflowRequestRows(
 
 func (d *nosqlExecutionStore) prepareActiveClusterSelectionPolicyRow(domainID, workflowID, runID string, activeClusterSelectionPolicy *persistence.DataBlob) *nosqlplugin.ActiveClusterSelectionPolicyRow {
 	if activeClusterSelectionPolicy == nil {
+		d.logger.Debugf("ActiveClusterSelectionPolicy is nil for domain %s, workflow %s, run %s", domainID, workflowID, runID)
 		return nil
 	}
 
+	d.logger.Debugf("ActiveClusterSelectionPolicy is NOT nil for domain %s, workflow %s, run %s", domainID, workflowID, runID)
 	return &nosqlplugin.ActiveClusterSelectionPolicyRow{
 		ShardID:    d.shardID,
 		DomainID:   domainID,

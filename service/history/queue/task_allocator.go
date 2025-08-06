@@ -167,6 +167,9 @@ func (t *taskAllocatorImpl) verifyTaskActiveness(cluster string, domainID, wfID,
 			)
 			return false, err
 		}
+		// TODO(active-active): Instead of comparing cluster names:
+		// - get failoverVersion of `cluster`
+		// - compare it against resp.FailoverVersion
 		if resp.ClusterName != cluster {
 			t.logger.Debug("Skip task because workflow is not active on the given cluster",
 				tag.WorkflowID(wfID),

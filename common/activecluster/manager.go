@@ -26,6 +26,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"runtime/debug"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -51,6 +52,7 @@ type DomainIDToDomainFn func(id string) (*cache.DomainCacheEntry, error)
 const (
 	LookupNewWorkflowOpName       = "LookupNewWorkflow"
 	LookupWorkflowOpName          = "LookupWorkflow"
+	LookupClusterOpName           = "LookupCluster"
 	DomainIDToDomainFnErrorReason = "domain_id_to_name_fn_error"
 )
 
@@ -289,6 +291,7 @@ func (m *managerImpl) LookupWorkflow(ctx context.Context, domainID, wfID, rID st
 				tag.WorkflowRunID(rID),
 				tag.ActiveClusterName(d.GetReplicationConfig().ActiveClusterName),
 				tag.FailoverVersion(d.GetFailoverVersion()),
+				tag.Dynamic("stack", string(debug.Stack())),
 			)
 			return &LookupResult{
 				ClusterName:     d.GetReplicationConfig().ActiveClusterName,
@@ -310,6 +313,7 @@ func (m *managerImpl) LookupWorkflow(ctx context.Context, domainID, wfID, rID st
 			tag.Region(region),
 			tag.ActiveClusterName(cluster.ActiveClusterName),
 			tag.FailoverVersion(cluster.FailoverVersion),
+			tag.Dynamic("stack", string(debug.Stack())),
 		)
 		return &LookupResult{
 			Region:          region,
@@ -339,6 +343,7 @@ func (m *managerImpl) LookupWorkflow(ctx context.Context, domainID, wfID, rID st
 			tag.Region(externalEntity.Region),
 			tag.ActiveClusterName(cluster),
 			tag.FailoverVersion(externalEntity.FailoverVersion),
+			tag.Dynamic("stack", string(debug.Stack())),
 		)
 		return &LookupResult{
 			Region:          externalEntity.Region,
@@ -364,11 +369,51 @@ func (m *managerImpl) LookupWorkflow(ctx context.Context, domainID, wfID, rID st
 		tag.Region(region),
 		tag.ActiveClusterName(cluster.ActiveClusterName),
 		tag.FailoverVersion(cluster.FailoverVersion),
+		tag.Dynamic("stack", string(debug.Stack())),
 	)
 	return &LookupResult{
 		Region:          region,
 		ClusterName:     cluster.ActiveClusterName,
 		FailoverVersion: cluster.FailoverVersion,
+	}, nil
+}
+
+func (m *managerImpl) LookupCluster(ctx context.Context, domainID, clusterName string) (res *LookupResult, e error) {
+	d, scope, err := m.getDomainAndScope(domainID, LookupClusterOpName)
+	if err != nil {
+		return nil, err
+	}
+	defer m.handleError(scope, &e, time.Now())
+
+	clusterInfo, ok := m.clusterMetadata.GetAllClusterInfo()[clusterName]
+	if !ok {
+		return nil, newClusterNotFoundError(clusterName)
+	}
+
+	if !d.GetReplicationConfig().IsActiveActive() {
+		// Not an active-active domain. return ActiveClusterName from domain entry
+		m.logger.Debug("LookupCluster: not an active-active domain. returning given clusterName",
+			tag.WorkflowDomainID(domainID),
+			tag.ClusterName(clusterName),
+		)
+
+		return &LookupResult{
+			ClusterName:     clusterName,
+			FailoverVersion: clusterInfo.InitialFailoverVersion,
+			Region:          clusterInfo.Region,
+		}, nil
+	}
+
+	region := clusterInfo.Region
+	activeCluster, ok := d.GetReplicationConfig().ActiveClusters.ActiveClustersByRegion[region]
+	if !ok {
+		return nil, newRegionNotFoundForDomainError(region, domainID)
+	}
+
+	return &LookupResult{
+		Region:          region,
+		ClusterName:     activeCluster.ActiveClusterName,
+		FailoverVersion: activeCluster.FailoverVersion,
 	}, nil
 }
 

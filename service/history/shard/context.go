@@ -1309,6 +1309,9 @@ func (s *contextImpl) allocateTimerIDsLocked(
 			// or otherwise, failover + active processing logic may not pick up the task.
 			cluster = domainEntry.GetReplicationConfig().ActiveClusterName
 
+			// TODO:(active-active): this doesn't work for initial backoff timer task because the workflow's active-cluster-selection-policy row is not stored yet.
+			// Therefore it returns current cluster (fallback logic in activecluster manager)
+			// Try queue v2 and see if it fixes the issue. then remove this code
 			// if domain is active-active, lookup the workflow to determine the corresponding cluster
 			if domainEntry.GetReplicationConfig().IsActiveActive() {
 				// TODO(active-active): create a contextImpl.ctx which is tied to the shard context lifecycle
