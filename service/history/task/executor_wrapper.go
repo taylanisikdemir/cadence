@@ -101,10 +101,10 @@ func (e *executorWrapper) isActiveTask(
 		}
 		if resp.ClusterName != e.currentClusterName {
 			if e.logger.DebugOn() {
-				taskJson, _ := json.Marshal(task)
+				taskJSON, _ := json.Marshal(task)
 				e.logger.Debug("Process task as standby.",
 					tag.WorkflowDomainID(domainID),
-					tag.Dynamic("task", string(taskJson)),
+					tag.Dynamic("task", string(taskJSON)),
 					tag.Dynamic("taskType", task.GetTaskType()),
 					tag.ClusterName(resp.ClusterName),
 					tag.Dynamic("stack", string(debug.Stack())),
@@ -113,10 +113,10 @@ func (e *executorWrapper) isActiveTask(
 			return false
 		}
 		if e.logger.DebugOn() {
-			taskJson, _ := json.Marshal(task)
+			taskJSON, _ := json.Marshal(task)
 			e.logger.Debug("Process task as active.",
 				tag.WorkflowDomainID(domainID),
-				tag.Dynamic("task", string(taskJson)),
+				tag.Dynamic("task", string(taskJSON)),
 				tag.Dynamic("taskType", task.GetTaskType()),
 				tag.ClusterName(e.currentClusterName),
 				tag.Dynamic("stack", string(debug.Stack())),
