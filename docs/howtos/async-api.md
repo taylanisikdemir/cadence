@@ -57,8 +57,7 @@ Note: It may take a minute for the containers to be ready. Check their status vi
 
 ```
 docker run -t --rm --network host ubercadence/cli:master \
-    --transport grpc \
-    --address localhost:7833 \
+    --address localhost:7933 \
     --domain test-domain \
     domain register
 ```
@@ -68,8 +67,7 @@ docker run -t --rm --network host ubercadence/cli:master \
 Configure `test-domain` to use `queue1` as the async workflow queue.
 ```
 docker run -t --rm --network host ubercadence/cli:master \
-    --transport grpc \
-    --address localhost:7833 \
+    --address localhost:7933 \
     --domain test-domain \
     admin async-wf-queue update \
     --json "{\"PredefinedQueueName\":\"queue1\", \"Enabled\": true}"
@@ -80,8 +78,7 @@ Note: If you get "Domain update too frequent." error, you can try to wait for a 
 Validate the new configuration:
 ```
 docker run -t --rm --network host ubercadence/cli:master \
-    --transport grpc \
-    --address localhost:7833 \
+    --address localhost:7933 \
     --domain test-domain \
     admin async-wf-queue get
 ```
